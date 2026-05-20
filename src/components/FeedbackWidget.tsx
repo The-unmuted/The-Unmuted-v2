@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { MessageSquarePlus, X, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { Mail, X, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
 import { copyFor } from "@/lib/locale";
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_ANON_KEY as string
-);
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 type FeedbackType = "bug" | "suggestion" | "other";
 
@@ -29,6 +30,7 @@ export default function FeedbackWidget({ language }: FeedbackWidgetProps) {
   const handleSubmit = async () => {
     if (!message.trim()) return;
     setStatus("sending");
+    if (!supabase) { setStatus("error"); return; }
     const { error } = await supabase
       .from("unmuted_feedback")
       .insert({ type, message: message.trim(), language });
@@ -54,7 +56,7 @@ export default function FeedbackWidget({ language }: FeedbackWidgetProps) {
         aria-label="Feedback"
         className="rounded-full border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-accent"
       >
-        <MessageSquarePlus className="h-3.5 w-3.5" />
+        <Mail className="h-3.5 w-3.5" />
       </button>
 
       {/* Backdrop */}
