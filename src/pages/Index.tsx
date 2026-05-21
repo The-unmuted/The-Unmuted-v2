@@ -12,9 +12,11 @@ import DAOPage from "@/components/DAOPage";
 import { useLocale, copyFor } from "@/lib/locale";
 import { emailFromPrivyUser, normalizeEmail, usePrivyAuth } from "@/lib/privyAuth";
 import { assessSolanaWallet, type WalletReputation } from "@/lib/solanaReputation";
-import { AlertTriangle, CheckCircle2, Loader2, Mail, Wallet } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Mail, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import FeedbackWidget from "@/components/FeedbackWidget";
+import SettingsWidget from "@/components/SettingsWidget";
+import { hasPassword, verifyPassword, savePassword } from "@/lib/userCredentials";
 
 const CONTRACT_ADDRESS = "0x79B1A83d803213560BA5AF373FDcE54d1e84f18c";
 const BRAND_BANNER_EN = "SECURE RECORD PROTECT SPEAK";
@@ -30,7 +32,7 @@ export default function Index() {
   const identity = useZKPIdentity();
   const privyAuth = usePrivyAuth();
   const { isSilent, voiceDeterrent, customAudioUrl } = useSilentMode();
-  type SignupMode = "idle" | "phantom" | "email-send" | "email-verify" | "email-contact";
+  type SignupMode = "idle" | "phantom" | "email-send" | "email-verify" | "email-contact" | "password-login" | "set-password";
   const [signupMode, setSignupMode] = useState<SignupMode>("idle");
   const [pendingEmail, setPendingEmail] = useState("");
   const [walletReputation, setWalletReputation] = useState<WalletReputation | null>(null);
@@ -49,8 +51,15 @@ export default function Index() {
     handledPrivyUserRef.current = privyAuth.user.id;
     void identity
       .generateFromEmail(verifiedEmail, privyAuth.user.id, true)
-      .then(() => {
-        setSignupMode("idle");
+      .then(async () => {
+        // Prompt to set a password if they don't have one yet
+        const hasPwd = await hasPassword(verifiedEmail);
+        if (!hasPwd) {
+          setPendingEmail(verifiedEmail);
+          setSignupMode("set-password");
+        } else {
+          setSignupMode("idle");
+        }
         toast.success(copyFor(language, "Email verified. Identity created.", "邮箱已验证，身份已创建。"));
       })
       .catch((error) => {
@@ -97,6 +106,14 @@ export default function Index() {
     }
 
     setPendingEmail(normalized);
+
+    // Check if user already has a password set → go to password login
+    const hasPwd = await hasPassword(normalized);
+    if (hasPwd) {
+      setSignupMode("password-login");
+      return;
+    }
+
     if (!privyAuth.configured) {
       setSignupMode("email-contact");
       return;
@@ -111,6 +128,27 @@ export default function Index() {
       setSignupMode("idle");
       toast.error(error instanceof Error ? error.message : copyFor(language, "Could not send OTP.", "验证码发送失败。"));
     }
+  };
+
+  const handlePasswordLogin = async (password: string) => {
+    const ok = await verifyPassword(pendingEmail, password);
+    if (!ok) {
+      toast.error(copyFor(language, "Incorrect password.", "密码错误。"));
+      return;
+    }
+    await identity.generateFromEmail(pendingEmail, `password:${pendingEmail}`, true);
+    toast.success(copyFor(language, "Welcome back!", "欢迎回来！"));
+    setSignupMode("idle");
+  };
+
+  const handleSetPassword = async (password: string) => {
+    if (password.length < 6) {
+      toast.error(copyFor(language, "Password must be at least 6 characters.", "密码至少6位。"));
+      return;
+    }
+    await savePassword(pendingEmail, password);
+    toast.success(copyFor(language, "Password saved. You can use it next time.", "密码已保存，下次可直接使用。"));
+    setSignupMode("idle");
   };
 
   const handleVerifyEmail = async (token: string) => {
@@ -139,6 +177,12 @@ export default function Index() {
     }
   };
 
+  const handleLogout = () => {
+    identity.revoke();
+    setSignupMode("idle");
+    setPendingEmail("");
+  };
+
   return (
     <div className="flex h-[100dvh] min-h-0 flex-col bg-background">
       {/* Top bar — sits below the iOS status bar (safe-area-inset-top handled by body) */}
@@ -160,6 +204,13 @@ export default function Index() {
         </div>
         <div className="flex items-center gap-2">
           <FeedbackWidget language={language} />
+          {isSignedIn && (
+            <SettingsWidget
+              language={language}
+              email={pendingEmail}
+              onLogout={handleLogout}
+            />
+          )}
           <button
             onClick={() => setLanguage(language === "en" ? "zh" : "en")}
             className="rounded-full border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-accent"
@@ -169,7 +220,7 @@ export default function Index() {
         </div>
       </header>
 
-      {!isSignedIn ? (
+      {!isSignedIn || signupMode === "set-password" ? (
         <SignupPage
           language={language}
           loading={identity.generating}
@@ -184,6 +235,9 @@ export default function Index() {
           onVerifyEmail={handleVerifyEmail}
           onContactOnlyEmail={handleContactOnlyEmail}
           onCancelEmail={() => setSignupMode("idle")}
+          onPasswordLogin={handlePasswordLogin}
+          onSetPassword={handleSetPassword}
+          onSkipPassword={() => setSignupMode("idle")}
         />
       ) : (
         <>
@@ -234,10 +288,13 @@ function SignupPage({
   onVerifyEmail,
   onContactOnlyEmail,
   onCancelEmail,
+  onPasswordLogin,
+  onSetPassword,
+  onSkipPassword,
 }: {
   language: "en" | "zh";
   loading: boolean;
-  mode: "idle" | "phantom" | "email-send" | "email-verify" | "email-contact";
+  mode: "idle" | "phantom" | "email-send" | "email-verify" | "email-contact" | "password-login" | "set-password";
   isPhantomInstalled: boolean;
   walletReputation: WalletReputation | null;
   emailOtpReady: boolean;
@@ -248,9 +305,14 @@ function SignupPage({
   onVerifyEmail: (token: string) => void;
   onContactOnlyEmail: () => void;
   onCancelEmail: () => void;
+  onPasswordLogin: (password: string) => void;
+  onSetPassword: (password: string) => void;
+  onSkipPassword: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
   const busy = loading || mode === "phantom" || mode === "email-send" || emailOtpStatus === "submitting-code";
 
   return (
@@ -404,7 +466,89 @@ function SignupPage({
               </button>
             </div>
           )}
+
+          {/* Password login — returning user */}
+          {mode === "password-login" && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                {copyFor(language, `Welcome back, ${pendingEmail}`, `欢迎回来，${pendingEmail}`)}
+              </p>
+              <div className="relative">
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onPasswordLogin(password)}
+                  placeholder={copyFor(language, "Password", "密码")}
+                  type={showPwd ? "text" : "password"}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 pr-11 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                />
+                <button
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <button
+                onClick={() => onPasswordLogin(password)}
+                disabled={!password || busy}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                <KeyRound className="h-4 w-4" />
+                {copyFor(language, "Sign in", "登录")}
+              </button>
+              <button onClick={onCancelEmail} className="w-full text-xs text-muted-foreground underline">
+                {copyFor(language, "Use a different email", "使用其他邮箱")}
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Set password — shown after first OTP success */}
+        {mode === "set-password" && (
+          <div className="mt-5 rounded-[1.75rem] border border-primary/30 bg-primary/5 p-4 text-left">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+                <KeyRound className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-foreground">
+                  {copyFor(language, "Set a password", "设置密码")}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {copyFor(language, "Next time you can skip the OTP and sign in directly.", "下次可以跳过验证码，直接用密码登录。")}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="relative">
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={copyFor(language, "Choose a password (min. 6 chars)", "设置密码（至少6位）")}
+                  type={showPwd ? "text" : "password"}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 pr-11 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                />
+                <button
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <button
+                onClick={() => onSetPassword(password)}
+                disabled={password.length < 6}
+                className="w-full rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+              >
+                {copyFor(language, "Save password & enter", "保存密码并进入")}
+              </button>
+              <button onClick={onSkipPassword} className="w-full text-xs text-muted-foreground underline">
+                {copyFor(language, "Skip for now", "跳过")}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
