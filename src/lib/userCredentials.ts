@@ -1,47 +1,34 @@
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
+// Password stored in localStorage only (no server round-trip, no RLS issues)
+const PASS_KEY_PREFIX = "unmuted_pwd_";
+const USERNAME_KEY = "unmuted_username";
+
+// Supabase used for username sync only
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 const db = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
-const USERNAME_KEY = "unmuted_username";
-
-/** Check if an email already has a password set */
+/** Check if an email already has a password set (localStorage) */
 export async function hasPassword(email: string): Promise<boolean> {
-  if (!db) return false;
-  const { data } = await db
-    .from("user_credentials")
-    .select("email")
-    .eq("email", email.toLowerCase())
-    .maybeSingle();
-  return Boolean(data);
+  return Boolean(localStorage.getItem(PASS_KEY_PREFIX + email.toLowerCase()));
 }
 
-/** Verify email + password. Returns true if correct. */
+/** Verify email + password against locally stored bcrypt hash */
 export async function verifyPassword(email: string, password: string): Promise<boolean> {
-  if (!db) return false;
-  const { data } = await db
-    .from("user_credentials")
-    .select("password_hash")
-    .eq("email", email.toLowerCase())
-    .maybeSingle();
-  if (!data?.password_hash) return false;
-  return bcrypt.compare(password, data.password_hash);
+  const hash = localStorage.getItem(PASS_KEY_PREFIX + email.toLowerCase());
+  if (!hash) return false;
+  return bcrypt.compare(password, hash);
 }
 
-/** Save a new password for this email (first-time setup). */
+/** Hash and save password to localStorage */
 export async function savePassword(email: string, password: string): Promise<void> {
-  if (!db) throw new Error("Supabase not configured");
   const hash = await bcrypt.hash(password, 10);
-  await db.from("user_credentials").upsert({
-    email: email.toLowerCase(),
-    password_hash: hash,
-    updated_at: new Date().toISOString(),
-  });
+  localStorage.setItem(PASS_KEY_PREFIX + email.toLowerCase(), hash);
 }
 
-/** Get username from Supabase (or fall back to localStorage). */
+/** Get username from Supabase (or fall back to localStorage) */
 export async function getUsername(email: string): Promise<string> {
   const local = localStorage.getItem(USERNAME_KEY) ?? "";
   if (!db || !email) return local;
@@ -53,7 +40,7 @@ export async function getUsername(email: string): Promise<string> {
   return data?.username ?? local;
 }
 
-/** Save username to Supabase + localStorage. */
+/** Save username to localStorage + Supabase if available */
 export async function saveUsername(email: string, username: string): Promise<void> {
   localStorage.setItem(USERNAME_KEY, username);
   if (!db || !email) return;
