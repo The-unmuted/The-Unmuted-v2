@@ -2,16 +2,15 @@ import { useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, Video, Mic, MicOff, CheckCircle2, Loader2,
-  ArrowLeft, Clock, Download, ExternalLink, ShieldCheck, Copy, ChevronDown, Wallet,
+  ArrowLeft, Clock, Download, ExternalLink, ShieldCheck, Copy, ChevronDown,
   ClipboardList, HeartPulse, MapPin, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEvidenceVault } from "@/hooks/useEvidenceVault";
-import { useSolanaWallet, shortenSolAddress } from "@/hooks/useSolanaWallet";
 import { loadSOSHistory } from "@/lib/localStorage";
 import { shortenHash } from "@/hooks/useWallet";
 import { formatBytes } from "@/lib/evidenceCrypto";
-import { SOLANA_NETWORK } from "@/lib/evidenceContract";
+import { CHAINMAKER_NETWORK } from "@/lib/chainmakerService";
 import { AppLanguage, copyFor } from "@/lib/locale";
 import { hasReportNotes, saveEncryptedReportNotes, type EncryptedReportNoteRecord } from "@/lib/reportNotesVault";
 
@@ -474,11 +473,11 @@ function ReceiptCard({
               </div>
             </div>
 
-            {/* Chain TX — Solana */}
+            {/* Chain TX — ChainMaker */}
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
                 <p className="text-xs font-semibold text-muted-foreground">
-                  {copyFor(language, "Solana on-chain timestamp", "Solana 链上时间戳")}
+                  {copyFor(language, "长安链 ChainMaker Timestamp", "长安链时间戳 / ChainMaker Timestamp")}
                 </p>
                 {record.isSimulated && (
                   <span className="rounded px-1 py-0.5 text-[10px] font-bold bg-sos-offline/15 text-sos-offline">
@@ -598,7 +597,6 @@ export default function EvidencePage({
   onComplete?: () => void;
 }) {
   const vault = useEvidenceVault(language);
-  const solana = useSolanaWallet();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
@@ -676,9 +674,6 @@ export default function EvidencePage({
           language={language}
         />
       )}
-
-      {/* ── Phantom wallet banner ── */}
-      <PhantomBanner solana={solana} language={language} />
 
       {vault.step === "idle" && (
         <>
@@ -784,8 +779,8 @@ export default function EvidencePage({
               status={vault.steps.uploading}
             />
             <StepRow
-              label={copyFor(language, "Solana on-chain timestamp", "Solana 链上时间戳")}
-              sublabel={copyFor(language, "The hash is written through Solana Memo Program.", "哈希通过 Memo Program 写入 Solana，不可篡改")}
+              label={copyFor(language, "ChainMaker (长安链) timestamp", "长安链时间戳")}
+              sublabel={copyFor(language, "Hash anchored on ChainMaker judicial alliance chain.", "哈希写入长安链（司法联盟链），不可篡改")}
               status={vault.steps.anchoring}
             />
           </motion.div>
@@ -1064,9 +1059,9 @@ function HowItWorksDisclosure({
       copyFor(language, "Encrypted originals are permanently stored on a decentralized network.", "加密原件永久存储于去中心化网络"),
     ],
     [
-      "◎",
-      copyFor(language, "Solana timestamp", "Solana 时间戳"),
-      copyFor(language, "Hashes are written through Solana Memo Program.", "哈希经 Memo Program 写入 Solana，不可篡改"),
+      "⛓",
+      copyFor(language, "ChainMaker (长安链) timestamp", "长安链时间戳"),
+      copyFor(language, "Hashes are anchored on ChainMaker judicial alliance chain.", "哈希写入长安链（司法联盟链），不可篡改"),
     ],
   ];
 
@@ -1195,54 +1190,3 @@ function SOSHistory({ language }: { language: AppLanguage }) {
   );
 }
 
-// ── Phantom wallet banner ──────────────────────────────────────────────────────
-
-function PhantomBanner({
-  solana,
-  language,
-}: {
-  solana: ReturnType<typeof useSolanaWallet>;
-  language: AppLanguage;
-}) {
-  const { wallet, connect, disconnect } = solana;
-
-  if (wallet.isConnected && wallet.address) {
-    return (
-      <div className="flex items-center justify-between rounded-xl border border-sos-success/25 bg-sos-success/8 px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Wallet className="h-3.5 w-3.5 text-sos-success" />
-          <span className="text-xs font-semibold text-sos-success">
-            {copyFor(language, "Phantom connected", "Phantom 已连接")}
-          </span>
-          <span className="font-mono text-[11px] text-muted-foreground">
-            {shortenSolAddress(wallet.address)}
-          </span>
-          <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-sos-offline/15 text-sos-offline">
-            {SOLANA_NETWORK}
-          </span>
-        </div>
-        <button
-          onClick={disconnect}
-          className="text-[11px] text-muted-foreground underline"
-        >
-          {copyFor(language, "Disconnect", "断开")}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={connect}
-      className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-2.5 text-sm font-semibold text-foreground active:scale-95 transition-transform"
-    >
-      <Wallet className="h-4 w-4 text-muted-foreground" />
-      {wallet.isPhantomInstalled
-        ? copyFor(language, "Connect Phantom", "连接 Phantom 钱包")
-        : copyFor(language, "Install Phantom", "安装 Phantom 钱包")}
-      <span className="text-xs text-muted-foreground font-normal">
-        {copyFor(language, "Demo mode when disconnected", "未连接时演示模式运行")}
-      </span>
-    </button>
-  );
-}

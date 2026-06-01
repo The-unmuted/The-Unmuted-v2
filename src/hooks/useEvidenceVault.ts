@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { encryptFile, buildKeyBundle, downloadKeyBundle, type EncryptionResult } from '@/lib/evidenceCrypto';
 import { uploadToArweave, type ArweaveUploadResult } from '@/lib/arweaveService';
-import { anchorOnChain, type AnchorResult } from '@/lib/evidenceContract';
+import { anchorOnChain, type AnchorResult } from '@/lib/chainmakerService';
 import { addVaultRecord, loadVaultRecords, type VaultRecord } from '@/lib/localStorage';
 import { AppLanguage, copyFor } from '@/lib/locale';
 
@@ -74,7 +74,7 @@ export function useEvidenceVault(language: AppLanguage = 'en') {
       return;
     }
 
-    // Step 3 — Anchor hash on Solana via Memo Program
+    // Step 3 — Anchor hash on ChainMaker (长安链)
     setStep('anchoring');
     setStepStatus('anchoring', 'running');
     try {

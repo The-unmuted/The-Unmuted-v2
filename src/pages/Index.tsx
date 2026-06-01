@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useWallet } from "@/hooks/useWallet";
 import { useSolanaWallet } from "@/hooks/useSolanaWallet";
 import { useZKPIdentity } from "@/hooks/useZKPIdentity";
 import { useSilentMode } from "@/hooks/useSilentMode";
@@ -8,7 +7,7 @@ import BottomNav, { type MainTab } from "@/components/BottomNav";
 import MapPage from "@/components/MapPage";
 import EvidencePage from "@/components/EvidencePage";
 import CommunityPage from "@/components/CommunityPage";
-import DAOPage from "@/components/DAOPage";
+import NGOPage from "@/components/NGOPage";
 import { useLocale, copyFor } from "@/lib/locale";
 import { emailFromPrivyUser, normalizeEmail, usePrivyAuth } from "@/lib/privyAuth";
 import { assessSolanaWallet, type WalletReputation } from "@/lib/solanaReputation";
@@ -18,7 +17,6 @@ import FeedbackWidget from "@/components/FeedbackWidget";
 import SettingsWidget from "@/components/SettingsWidget";
 import { hasPassword, verifyPassword, savePassword } from "@/lib/userCredentials";
 
-const CONTRACT_ADDRESS = "0x79B1A83d803213560BA5AF373FDcE54d1e84f18c";
 const BRAND_BANNER_EN = "SECURE RECORD PROTECT SPEAK";
 const BRAND_BANNER_ZH = "安全 记录 守护 发声";
 const LOGO_SRC = "/the-unmuted-mark.png";
@@ -27,7 +25,6 @@ export default function Index() {
   const [activeTab, setActiveTab] = useState<MainTab>("sos");
   const [showAfterReport, setShowAfterReport] = useState(false);
   const { language, setLanguage } = useLocale();
-  const legacyWalletHook = useWallet(CONTRACT_ADDRESS, language);
   const solanaWallet = useSolanaWallet();
   const identity = useZKPIdentity();
   const privyAuth = usePrivyAuth();
@@ -38,7 +35,6 @@ export default function Index() {
   const [walletReputation, setWalletReputation] = useState<WalletReputation | null>(null);
   const handledPrivyUserRef = useRef("");
 
-  const { wallet } = legacyWalletHook;
   const isSignedIn = Boolean(identity.identity?.provider && identity.identity.commitment);
 
   useEffect(() => {
@@ -251,9 +247,6 @@ export default function Index() {
               />
             ) : activeTab === "sos" && (
               <SOSPage
-                contract={wallet.contract}
-                isWalletConnected={wallet.isConnected}
-                isCorrectNetwork={wallet.isCorrectNetwork}
                 isSilent={isSilent}
                 voiceDeterrent={voiceDeterrent}
                 customAudioUrl={customAudioUrl}
@@ -263,7 +256,7 @@ export default function Index() {
             )}
             {!showAfterReport && activeTab === "map" && <MapPage language={language} />}
             {!showAfterReport && activeTab === "community" && <CommunityPage language={language} />}
-            {!showAfterReport && activeTab === "dao" && <DAOPage language={language} />}
+            {!showAfterReport && activeTab === "ngo" && <NGOPage language={language} />}
           </main>
 
           {/* Bottom nav */}

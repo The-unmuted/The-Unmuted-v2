@@ -9,11 +9,11 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Loader2, Send, Shield, Users, Lock,
-  Clock, CheckCircle2, X,
+  Clock, CheckCircle2, X, UserPlus, Trash2,
 } from "lucide-react";
-import { Contract } from "ethers";
 import { toast } from "sonner";
 import SOSButton from "./SOSButton";
+import { NGOSuggestionSheet } from "./NGOPage";
 import {
   HELP_TYPE_CONFIG, SUPPORT_TYPE_CONFIG,
   type HelpType, type SupportType, type HelpRequest,
@@ -23,6 +23,7 @@ import { sendMessage, subscribeRoom, type ChatMessage } from "@/lib/p2pChat";
 import { useZKPIdentity } from "@/hooks/useZKPIdentity";
 import { recordCommunityHelpMapAlert } from "@/lib/geoAlert";
 import { AppLanguage, copyFor } from "@/lib/locale";
+import { useEmergencyContacts } from "@/hooks/useEmergencyContacts";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -43,9 +44,6 @@ interface FlowState {
 }
 
 export interface SOSPageProps {
-  contract:          Contract | null;
-  isWalletConnected: boolean;
-  isCorrectNetwork:  boolean;
   isSilent:          boolean;
   voiceDeterrent:    boolean;
   customAudioUrl:    string | null;
@@ -77,6 +75,7 @@ function supportDesc(supportType: SupportType | undefined, language: AppLanguage
 
 export default function SOSPage(props: SOSPageProps) {
   const [flow, setFlow] = useState<FlowState>({ view: "home" });
+  const [showNGOSuggestion, setShowNGOSuggestion] = useState(false);
   const zkp   = useZKPIdentity();
   const alias = zkp.alias ?? copyFor(props.language, "Anonymous user", "匿名用户");
 
@@ -122,6 +121,14 @@ export default function SOSPage(props: SOSPageProps) {
 
   return (
     <div className="flex flex-1 flex-col">
+      <AnimatePresence>
+        {showNGOSuggestion && (
+          <NGOSuggestionSheet
+            language={props.language}
+            onClose={() => setShowNGOSuggestion(false)}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence mode="wait">
 
         {/* ── Home ── */}
@@ -130,10 +137,8 @@ export default function SOSPage(props: SOSPageProps) {
             <HomeView
               onHelp={() => go({ view: "help:type" })}
               onAfterReport={props.onAfterReport}
+              onUserSafe={() => setShowNGOSuggestion(true)}
               language={props.language}
-              contract={props.contract}
-              isWalletConnected={props.isWalletConnected}
-              isCorrectNetwork={props.isCorrectNetwork}
               isSilent={props.isSilent}
               voiceDeterrent={props.voiceDeterrent}
               customAudioUrl={props.customAudioUrl}
@@ -224,6 +229,7 @@ export default function SOSPage(props: SOSPageProps) {
               onEnd={() => {
                 unsubRef.current?.();
                 go({ view: "home" });
+                setShowNGOSuggestion(true);
                 toast(copyFor(props.language, "Support conversation ended safely", "支援对话已安全结束"));
               }}
             />
@@ -281,20 +287,16 @@ function StepHeader({
 function HomeView({
   onHelp,
   onAfterReport,
+  onUserSafe,
   language,
-  contract,
-  isWalletConnected,
-  isCorrectNetwork,
   isSilent,
   voiceDeterrent,
   customAudioUrl,
 }: {
   onHelp: () => void;
   onAfterReport: () => void;
+  onUserSafe: () => void;
   language: AppLanguage;
-  contract: Contract | null;
-  isWalletConnected: boolean;
-  isCorrectNetwork: boolean;
   isSilent: boolean;
   voiceDeterrent: boolean;
   customAudioUrl: string | null;
@@ -303,15 +305,16 @@ function HomeView({
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-5 py-6">
       <div className="flex w-full max-w-[25rem] items-center justify-center py-4">
         <SOSButton
-          contract={contract}
-          isWalletConnected={isWalletConnected}
-          isCorrectNetwork={isCorrectNetwork}
           isSilent={isSilent}
           voiceDeterrent={voiceDeterrent}
           customAudioUrl={customAudioUrl}
           language={language}
+          onUserSafe={onUserSafe}
         />
       </div>
+
+      {/* Emergency contacts management card */}
+      <EmergencyContactsCard language={language} />
 
       <div className="grid w-full max-w-sm gap-3">
         <button
@@ -346,6 +349,108 @@ function HomeView({
           </p>
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Emergency Contacts Card ────────────────────────────────────────────────────
+
+function EmergencyContactsCard({ language }: { language: AppLanguage }) {
+  const { contacts, addContact, removeContact } = useEmergencyContacts();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  const handleAdd = () => {
+    if (!name.trim() || !phone.trim()) return;
+    addContact(name.trim(), phone.trim());
+    setName("");
+    setPhone("");
+    setAdding(false);
+  };
+
+  return (
+    <div className="w-full max-w-sm rounded-2xl border border-border/80 bg-card/92 px-5 py-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-foreground">
+          {copyFor(language, "Emergency Contacts", "紧急联系人")}
+        </p>
+        <button
+          onClick={() => setAdding((v) => !v)}
+          className="flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+          {copyFor(language, "Add", "添加")}
+        </button>
+      </div>
+
+      <p className="text-xs leading-5 text-muted-foreground">
+        {copyFor(
+          language,
+          "They'll receive an SMS with your location when you trigger SOS.",
+          "SOS触发时，会向他们发送带有你位置的短信。"
+        )}
+      </p>
+
+      <AnimatePresence>
+        {adding && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-2 pt-1">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={copyFor(language, "Name", "姓名")}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+              />
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder={copyFor(language, "Phone number", "手机号")}
+                type="tel"
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+              />
+              <button
+                onClick={handleAdd}
+                disabled={!name.trim() || !phone.trim()}
+                className="w-full rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {copyFor(language, "Save contact", "保存联系人")}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {contacts.length === 0 ? (
+        <p className="text-xs text-muted-foreground/70 italic">
+          {copyFor(language, "No contacts yet. Add one above.", "暂无联系人，请点击添加。")}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {contacts.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-2.5"
+            >
+              <div>
+                <p className="text-sm font-semibold text-foreground">{c.name}</p>
+                <p className="text-xs text-muted-foreground">{c.phone}</p>
+              </div>
+              <button
+                onClick={() => removeContact(c.id)}
+                className="rounded-lg p-1.5 text-muted-foreground hover:text-red-400 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

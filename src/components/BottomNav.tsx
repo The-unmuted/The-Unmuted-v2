@@ -1,7 +1,7 @@
-import { Shield, Map, HandHeart, Landmark } from "lucide-react";
+import { Shield, Map, HandHeart, HeartHandshake } from "lucide-react";
 import { AppLanguage, copyFor } from "@/lib/locale";
 
-export type MainTab = "sos" | "map" | "community" | "dao";
+export type MainTab = "sos" | "map" | "community" | "ngo";
 
 interface BottomNavProps {
   activeTab: MainTab;
@@ -10,10 +10,10 @@ interface BottomNavProps {
 }
 
 const tabs = [
-  { id: "sos"       as const, english: "Help", chinese: "求助", icon: Shield   },
-  { id: "map"       as const, english: "Map", chinese: "地图", icon: Map      },
-  { id: "community" as const, english: "Support", chinese: "支援", icon: HandHeart },
-  { id: "dao"       as const, english: "DAO", chinese: "治理", icon: Landmark },
+  { id: "sos"       as const, english: "Help",    chinese: "求助", icon: Shield        },
+  { id: "map"       as const, english: "Map",     chinese: "地图", icon: Map           },
+  { id: "community" as const, english: "Support", chinese: "支援", icon: HandHeart     },
+  { id: "ngo"       as const, english: "NGOs",    chinese: "机构", icon: HeartHandshake },
 ];
 
 export default function BottomNav({ activeTab, onTabChange, language }: BottomNavProps) {

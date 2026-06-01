@@ -1,52 +1,51 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, AlertTriangle } from "lucide-react";
-import { Contract } from "ethers";
+import { Check, MessageSquare, AlertTriangle, PhoneCall } from "lucide-react";
 import { playBeep, startDeterrentAudio, stopDeterrentAudio, isDeterrentPlaying_ } from "@/lib/audio";
 import { addSOSHistory } from "@/lib/localStorage";
 import { recordEmergencyMapAlert, reportZone } from "@/lib/geoAlert";
 import { canPublishMapAlert } from "@/lib/reportTrust";
-import { useOfflineBuffer } from "@/hooks/useOfflineBuffer";
-import { shortenHash } from "@/hooks/useWallet";
 import { AppLanguage, copyFor } from "@/lib/locale";
 import { toast } from "sonner";
+import {
+  useEmergencyContacts,
+  buildSmsUri,
+  type EmergencyContact,
+} from "@/hooks/useEmergencyContacts";
 
-type SOSState = "idle" | "pressing" | "loading" | "success" | "offline";
+type SOSState = "idle" | "pressing" | "triggered" | "success" | "no-contacts";
 const LOGO_SRC = "/sos-button-logo-cutout.png";
 
 interface SOSButtonProps {
-  contract: Contract | null;
-  isWalletConnected: boolean;
-  isCorrectNetwork: boolean;
   isSilent: boolean;
   voiceDeterrent: boolean;
   customAudioUrl: string | null;
   language: AppLanguage;
+  onUserSafe?: () => void;
 }
 
 export default function SOSButton({
-  contract,
-  isWalletConnected,
-  isCorrectNetwork,
   isSilent,
   voiceDeterrent,
   customAudioUrl,
   language,
+  onUserSafe,
 }: SOSButtonProps) {
   const [state, setState] = useState<SOSState>("idle");
   const [progress, setProgress] = useState(0);
-  const [countdown, setCountdown] = useState(3);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState(5);
   const [showSafeButton, setShowSafeButton] = useState(false);
+  const [extraContacts, setExtraContacts] = useState<EmergencyContact[]>([]);
+  const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef<number>(0);
-  const { addRecord } = useOfflineBuffer();
+  const { contacts } = useEmergencyContacts();
 
-  const HOLD_DURATION = 3000;
+  const HOLD_DURATION = 5000;
 
   const triggerSOS = useCallback(async () => {
-    setState("loading");
+    setState("triggered");
 
     if (!isSilent) {
       playBeep();
@@ -75,80 +74,62 @@ export default function SOSButton({
       // fallback to 0,0
     }
 
-    const latInt = Math.round(lat * 1_000_000);
-    const lngInt = Math.round(lng * 1_000_000);
+    setCoords({ lat, lng });
 
     addSOSHistory({
-      latitude: latInt,
-      longitude: lngInt,
+      latitude: Math.round(lat * 1_000_000),
+      longitude: Math.round(lng * 1_000_000),
       timestamp: Math.floor(Date.now() / 1000),
       status: "pending",
     });
 
-    // Start deterrent audio if sound is on
     if (voiceDeterrent && !isSilent) {
       startDeterrentAudio(customAudioUrl, language);
       setShowSafeButton(true);
     }
 
-    const canPublish = canPublishMapAlert();
     if (lat !== 0 || lng !== 0) {
       recordEmergencyMapAlert(lat, lng);
     }
-
-    if (canPublish && (lat !== 0 || lng !== 0)) {
+    if (canPublishMapAlert() && (lat !== 0 || lng !== 0)) {
       void reportZone(lat, lng, "emergency");
     }
 
-    if (contract && isWalletConnected && isCorrectNetwork && canPublish) {
-      try {
-        if (!isSilent) toast(copyFor(language, "Uploading on-chain...", "正在上链..."));
-        const tx = await contract.triggerSOS(latInt, lngInt, "");
-        const receipt = await tx.wait();
-        const hash = receipt.hash || tx.hash;
-        setTxHash(hash);
-        setState("success");
-
-        addSOSHistory({
-          latitude: latInt,
-          longitude: lngInt,
-          timestamp: Math.floor(Date.now() / 1000),
-          txHash: hash,
-          status: "success",
-        });
-
-        if (!isSilent) toast.success(copyFor(language, "✅ Evidence secured", "✅ 已安全存证"));
-        return;
-      } catch {
-        // Fall through to offline
+    if (contacts.length === 0) {
+      setState("no-contacts");
+      if (!isSilent) {
+        toast(copyFor(language, "⚠️ No emergency contacts set.", "⚠️ 尚未设置紧急联系人。"));
       }
+      return;
     }
 
-    addRecord(lat, lng);
-    setState("offline");
+    // Open SMS for first contact immediately
+    const [first, ...rest] = contacts;
+    const uri = buildSmsUri(first, lat, lng);
+    window.location.href = uri;
+
+    setExtraContacts(rest);
+    setState("success");
+
     if (!isSilent) {
-      toast(canPublish
-        ? copyFor(language, "⚠️ Saved locally. Waiting for network recovery.", "⚠️ 已本地存储，等待网络恢复")
-        : copyFor(
-            language,
-            "Saved privately. Public map alert needs stronger account trust.",
-            "已私密保存。公开地图预警需要更高账户可信度。"
-          ));
+      toast.success(
+        copyFor(language, `SMS opening for ${first.name}`, `正在向 ${first.name} 发送短信`)
+      );
     }
-  }, [contract, isWalletConnected, isCorrectNetwork, isSilent, voiceDeterrent, customAudioUrl, addRecord, language]);
+  }, [contacts, isSilent, voiceDeterrent, customAudioUrl, language]);
 
   const handlePointerDown = useCallback(() => {
-    if (state === "loading" || state === "success") return;
+    if (state === "triggered" || state === "success") return;
     setState("pressing");
     setProgress(0);
-    setCountdown(3);
+    setCountdown(5);
     startTimeRef.current = Date.now();
 
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const pct = Math.min(elapsed / HOLD_DURATION, 1);
       setProgress(pct);
-      setCountdown(Math.max(0, 3 - Math.floor(elapsed / 1000)));
+      setCountdown(Math.max(0, 5 - Math.floor(elapsed / 1000)));
 
       if (pct >= 1) {
         clearInterval(intervalRef.current);
@@ -162,7 +143,7 @@ export default function SOSButton({
       clearInterval(intervalRef.current);
       setState("idle");
       setProgress(0);
-      setCountdown(3);
+      setCountdown(5);
     }
   }, [state]);
 
@@ -171,7 +152,8 @@ export default function SOSButton({
     setShowSafeButton(false);
     setState("idle");
     setProgress(0);
-    setTxHash(null);
+    setExtraContacts([]);
+    onUserSafe?.();
   };
 
   const resetAfterDelay = () => {
@@ -179,21 +161,21 @@ export default function SOSButton({
       if (!isDeterrentPlaying_()) {
         setState("idle");
         setProgress(0);
-        setTxHash(null);
+        setExtraContacts([]);
       }
-    }, 8000);
+    }, 10000);
   };
 
-  if (state === "success" || state === "offline") {
+  if (state === "success" || state === "no-contacts") {
     resetAfterDelay();
   }
 
   const glowClass = {
     idle: "drop-shadow-[0_0_34px_hsl(var(--sos-glow))]",
     pressing: "drop-shadow-[0_0_34px_hsl(var(--sos-pressing-glow))]",
-    loading: "drop-shadow-[0_0_34px_hsl(var(--sos-glow))]",
+    triggered: "drop-shadow-[0_0_34px_hsl(var(--sos-glow))]",
     success: "drop-shadow-[0_0_34px_hsl(var(--sos-success-glow))]",
-    offline: "drop-shadow-[0_0_28px_hsl(45_93%_58%/0.3)]",
+    "no-contacts": "drop-shadow-[0_0_28px_hsl(45_93%_58%/0.3)]",
   }[state];
 
   return (
@@ -239,11 +221,11 @@ export default function SOSButton({
                 <span className="text-sm text-primary-foreground/80">{Math.round(progress * 100)}%</span>
               </motion.div>
             )}
-            {state === "loading" && (
-              <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
-                <Loader2 className="h-14 w-14 animate-spin text-primary-foreground" />
+            {state === "triggered" && (
+              <motion.div key="triggered" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
+                <MessageSquare className="h-14 w-14 animate-pulse text-primary-foreground" />
                 <span className="text-sm font-medium text-primary-foreground/80">
-                  {copyFor(language, "Uploading...", "正在上链...")}
+                  {copyFor(language, "Opening SMS...", "正在打开短信...")}
                 </span>
               </motion.div>
             )}
@@ -251,24 +233,15 @@ export default function SOSButton({
               <motion.div key="success" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
                 <Check className="h-16 w-16 text-primary-foreground" strokeWidth={3} />
                 <span className="text-lg font-bold text-primary-foreground">
-                  {copyFor(language, "Secured", "已安全存证")}
+                  {copyFor(language, "SMS Sent", "短信已发送")}
                 </span>
-                {txHash && (
-                  <a href={`https://testnet.snowtrace.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer"
-                    className="font-mono text-xs text-primary-foreground/70 underline" onClick={(e) => e.stopPropagation()}>
-                    {shortenHash(txHash)}
-                  </a>
-                )}
               </motion.div>
             )}
-            {state === "offline" && (
-              <motion.div key="offline" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
+            {state === "no-contacts" && (
+              <motion.div key="no-contacts" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-2">
                 <AlertTriangle className="h-14 w-14 text-background" />
-                <span className="text-base font-bold text-background">
-                  {copyFor(language, "Saved Offline", "已本地存储")}
-                </span>
-                <span className="text-xs text-background/70">
-                  {copyFor(language, "Waiting for network", "等待网络恢复")}
+                <span className="text-sm font-bold text-background">
+                  {copyFor(language, "No Contacts Set", "未设置联系人")}
                 </span>
               </motion.div>
             )}
@@ -278,17 +251,43 @@ export default function SOSButton({
 
       {state === "idle" && (
         <p className="mt-3 text-center text-xs font-semibold uppercase tracking-[0.16em] text-primary/85">
-          {copyFor(language, "SOS: Emergency Report", "SOS：紧急上报")}
+          {copyFor(language, "SOS: Emergency Alert", "SOS：紧急求救")}
         </p>
       )}
 
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        {state === "idle" && copyFor(language, "Hold for 3 seconds", "长按 3 秒触发")}
-        {state === "pressing" && copyFor(language, "Keep holding", "继续按住...")}
-        {state === "loading" && copyFor(language, "Getting location and uploading", "正在获取位置并上链")}
-        {state === "success" && copyFor(language, "Report secured", "存证已完成并安全保存")}
-        {state === "offline" && copyFor(language, "Offline, saved locally", "离线，数据已暂存本地")}
+        {state === "idle" && copyFor(language, "Hold for 5 seconds to send SMS alert", "长按 5 秒发送短信求救")}
+        {state === "pressing" && copyFor(language, "Keep holding...", "继续按住...")}
+        {state === "triggered" && copyFor(language, "Getting location and opening SMS", "正在获取位置并打开短信")}
+        {state === "success" && copyFor(language, "SMS app opened with your location", "短信已附上你的位置")}
+        {state === "no-contacts" && copyFor(language, "Add emergency contacts below", "请在下方添加紧急联系人")}
       </p>
+
+      {/* Extra contacts (2nd, 3rd…) shown as tap-able SMS links */}
+      <AnimatePresence>
+        {state === "success" && extraContacts.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mt-4 w-full max-w-xs space-y-2"
+          >
+            <p className="text-center text-xs text-muted-foreground">
+              {copyFor(language, "Also alert:", "同时通知：")}
+            </p>
+            {extraContacts.map((c) => (
+              <a
+                key={c.id}
+                href={buildSmsUri(c, coords.lat, coords.lng)}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-semibold text-foreground active:scale-95 transition-transform"
+              >
+                <PhoneCall className="h-4 w-4 text-primary" />
+                {c.name}
+              </a>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showSafeButton && (
