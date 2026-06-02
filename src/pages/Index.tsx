@@ -137,7 +137,7 @@ export default function Index() {
               />
             )}
             {activeTab === "evidence" && (
-              <EvidencePage language={language} />
+              <EvidencePage language={language} userEmail={pendingEmail || undefined} />
             )}
             {activeTab === "psych" && <PsychPage language={language} />}
             {activeTab === "legal" && <LegalPage language={language} />}
