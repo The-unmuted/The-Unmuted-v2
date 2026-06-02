@@ -45,6 +45,10 @@ export default function SOSButton({
 
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef<number>(0);
+  // GPS pre-warm: start watchPosition at press-start so hardware GPS has
+  // 5 seconds to lock on before we actually need the coordinates.
+  const gpsWatchRef = useRef<number | null>(null);
+  const latestPositionRef = useRef<GeolocationPosition | null>(null);
   const { contacts } = useEmergencyContacts();
 
   const HOLD_DURATION = 5000;
@@ -68,29 +72,49 @@ export default function SOSButton({
     let lat = 0, lng = 0;
     let accuracy: number | undefined;
 
-    // Get GPS + battery in parallel to minimise delay
-    const [posResult, battResult] = await Promise.allSettled([
-      new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-        })
-      ),
-      // Battery API (Chrome/Android; silently ignored elsewhere)
-      (navigator as unknown as { getBattery?: () => Promise<{ level: number }> })
-        .getBattery?.() ?? Promise.reject(),
-    ]);
-
-    if (posResult.status === "fulfilled") {
-      lat = posResult.value.coords.latitude;
-      lng = posResult.value.coords.longitude;
-      accuracy = posResult.value.coords.accuracy ?? undefined;
+    // Stop the pre-warm watcher (started at press-down)
+    if (gpsWatchRef.current !== null) {
+      navigator.geolocation.clearWatch(gpsWatchRef.current);
+      gpsWatchRef.current = null;
     }
+
+    // Use the pre-warmed position if fresh (acquired during the 5-second hold)
+    const prewarmed = latestPositionRef.current;
+    latestPositionRef.current = null;
+
+    // Fetch battery in parallel with any remaining GPS work
+    const battPromise = (navigator as unknown as { getBattery?: () => Promise<{ level: number }> })
+      .getBattery?.() ?? Promise.reject();
+
+    if (prewarmed && Date.now() - prewarmed.timestamp < 30_000) {
+      // Great — use the already-precise pre-warmed fix
+      lat = prewarmed.coords.latitude;
+      lng = prewarmed.coords.longitude;
+      accuracy = prewarmed.coords.accuracy ?? undefined;
+    } else {
+      // Fallback: cold request with a shorter timeout (user already waited 5s)
+      const [posResult] = await Promise.allSettled([
+        new Promise<GeolocationPosition>((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0,
+          })
+        ),
+      ]);
+      if (posResult.status === "fulfilled") {
+        lat = posResult.value.coords.latitude;
+        lng = posResult.value.coords.longitude;
+        accuracy = posResult.value.coords.accuracy ?? undefined;
+      }
+    }
+
+    const [battResult] = await Promise.allSettled([battPromise]);
 
     // Device status for rescuers
     const battery =
       battResult.status === "fulfilled"
-        ? Math.round(battResult.value.level * 100)
+        ? Math.round((battResult.value as { level: number }).level * 100)
         : undefined;
     const network =
       (navigator as unknown as { connection?: { effectiveType?: string } })
@@ -157,6 +181,24 @@ export default function SOSButton({
     setCountdown(5);
     startTimeRef.current = Date.now();
 
+    // ── GPS pre-warm ──────────────────────────────────────────────────────────
+    // Start watchPosition immediately so the GPS hardware has the full 5-second
+    // hold period to lock on. By trigger time we'll have a much more accurate
+    // fix than a cold getCurrentPosition call would give.
+    if (navigator.geolocation && gpsWatchRef.current === null) {
+      gpsWatchRef.current = navigator.geolocation.watchPosition(
+        (pos) => {
+          // Keep the most recent (most accurate) fix
+          const prev = latestPositionRef.current;
+          if (!prev || pos.coords.accuracy < prev.coords.accuracy) {
+            latestPositionRef.current = pos;
+          }
+        },
+        () => { /* ignore errors during pre-warm */ },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    }
+
     intervalRef.current = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const pct = Math.min(elapsed / HOLD_DURATION, 1);
@@ -173,6 +215,12 @@ export default function SOSButton({
   const handlePointerUp = useCallback(() => {
     if (state === "pressing") {
       clearInterval(intervalRef.current);
+      // Cancel GPS pre-warm — user released early
+      if (gpsWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(gpsWatchRef.current);
+        gpsWatchRef.current = null;
+        latestPositionRef.current = null;
+      }
       setState("idle");
       setProgress(0);
       setCountdown(5);
