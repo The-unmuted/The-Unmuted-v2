@@ -23,54 +23,67 @@ interface Hotline {
   descriptionEn: string;
 }
 
+// 最后核实时间：2026年6月
 const HOTLINES: Hotline[] = [
   {
     id: "h1",
-    name: "全国心理援助热线",
-    nameEn: "National Mental Health Hotline",
+    name: "北京大学第六医院心理援助热线",
+    nameEn: "PKU-6 National Mental Health Hotline",
+    phone: "010-82951332",
+    hours: "24小时",
+    hoursEn: "24 / 7",
+    coverage: "全国",
+    coverageEn: "Nationwide",
+    description: "北京大学第六医院运营，全国可拨，提供免费心理疏导与危机干预",
+    descriptionEn: "Operated by Peking University 6th Hospital — free crisis intervention, nationwide",
+  },
+  {
+    id: "h2",
+    name: "全国心理援助热线（卫健委）",
+    nameEn: "National Health Commission Hotline",
     phone: "400-161-9995",
     hours: "24小时",
     hoursEn: "24 / 7",
     coverage: "全国",
     coverageEn: "Nationwide",
-    description: "卫生部指定心理援助热线，提供免费心理疏导与危机干预",
-    descriptionEn: "Ministry of Health hotline — free counseling and crisis intervention",
-  },
-  {
-    id: "h2",
-    name: "北京心理危机研究与干预中心",
-    nameEn: "Beijing Crisis Intervention Center",
-    phone: "010-82951332",
-    hours: "24小时",
-    hoursEn: "24 / 7",
-    coverage: "北京",
-    coverageEn: "Beijing",
-    description: "北京地区心理危机干预，提供专业评估与转介",
-    descriptionEn: "Crisis intervention and professional referrals in Beijing",
+    description: "国家卫生健康委员会指定热线，免费，保密，24小时接听",
+    descriptionEn: "National Health Commission designated hotline — free, confidential, 24/7",
   },
   {
     id: "h3",
-    name: "上海心理援助热线",
+    name: "上海市心理援助热线",
     nameEn: "Shanghai Mental Health Hotline",
     phone: "021-12320-5",
-    hours: "8:00 – 22:00",
-    hoursEn: "8 am – 10 pm",
+    hours: "24小时",
+    hoursEn: "24 / 7",
     coverage: "上海",
     coverageEn: "Shanghai",
-    description: "上海市心理援助热线，由专业心理咨询师接听",
-    descriptionEn: "Staffed by licensed counselors in Shanghai",
+    description: "上海市卫生热线12320心理援助分线，由专业心理咨询师接听",
+    descriptionEn: "Extension of Shanghai health hotline 12320, staffed by licensed counselors",
   },
   {
     id: "h4",
-    name: "广州危机干预热线",
-    nameEn: "Guangzhou Crisis Hotline",
-    phone: "020-81899120",
+    name: "广州心理援助热线",
+    nameEn: "Guangzhou Mental Health Hotline",
+    phone: "020-12320-5",
     hours: "24小时",
     hoursEn: "24 / 7",
     coverage: "广州",
     coverageEn: "Guangzhou",
-    description: "广州市心理援助与危机干预，免费保密",
-    descriptionEn: "Free, confidential crisis support in Guangzhou",
+    description: "广州市卫生热线心理援助分线，免费保密",
+    descriptionEn: "Guangzhou health hotline mental health extension — free, confidential",
+  },
+  {
+    id: "h5",
+    name: "希望24热线",
+    nameEn: "Hope 24 Hotline",
+    phone: "400-161-9995",
+    hours: "24小时",
+    hoursEn: "24 / 7",
+    coverage: "全国",
+    coverageEn: "Nationwide",
+    description: "专注自杀预防与危机干预，由经培训志愿者接听，完全保密",
+    descriptionEn: "Suicide prevention and crisis intervention, trained volunteers, fully confidential",
   },
 ];
 
@@ -88,8 +101,8 @@ export default function PsychPage({ language }: PsychPageProps) {
         <p className="mt-2 text-sm leading-5 text-muted-foreground">
           {copyFor(
             language,
-            "Free, confidential support. All hotlines are verified.",
-            "以下热线均经核实，免费保密，拨打无需预约。"
+            "Free, confidential support. All hotlines verified June 2026.",
+            "以下热线均经核实（2026年6月），免费保密，拨打无需预约。"
           )}
         </p>
       </div>

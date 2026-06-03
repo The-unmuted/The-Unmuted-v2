@@ -4,12 +4,12 @@ import {
   Camera, Video, Mic, MicOff, CheckCircle2, Loader2,
   ArrowLeft, Clock, Download, ExternalLink, ShieldCheck, Copy, ChevronDown,
   ClipboardList, HeartPulse, MapPin, ShieldAlert,
-  Lock, ChevronRight, Eye, EyeOff, Archive,
+  Lock, ChevronRight, Eye, EyeOff, Archive, Share2, AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEvidenceVault } from "@/hooks/useEvidenceVault";
 import { shortenHash } from "@/hooks/useWallet"; // eslint-disable-line @typescript-eslint/no-unused-vars
-import { formatBytes } from "@/lib/evidenceCrypto";
+import { formatBytes, buildKeyBundle } from "@/lib/evidenceCrypto";
 import { CHAINMAKER_NETWORK } from "@/lib/chainmakerService";
 import { AppLanguage, copyFor } from "@/lib/locale";
 import { hasReportNotes, saveEncryptedReportNotes, type EncryptedReportNoteRecord } from "@/lib/reportNotesVault";
@@ -375,21 +375,8 @@ function ReceiptCard({
         </div>
       </div>
 
-      {/* Key download — most important action */}
-      <button
-        onClick={onDownloadKey}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-sm text-primary-foreground active:scale-95 transition-transform"
-      >
-        <Download className="h-4 w-4" />
-        {copyFor(language, "Download decryption key", "下载解密密钥")}
-      </button>
-      <p className="text-center text-xs text-muted-foreground">
-        {copyFor(
-          language,
-          "Keep this key safe. The original file cannot be restored without it.",
-          "请妥善保存密钥。密钥丢失后无法恢复原始文件。"
-        )}
-      </p>
+      {/* Key save section — most important action */}
+      <KeySaveSection result={result} onDownloadKey={onDownloadKey} language={language} />
 
       {noteRows.length > 0 && (
         <div className="rounded-2xl border border-primary/18 bg-primary/8 p-3">
@@ -451,27 +438,45 @@ function ReceiptCard({
               language={language}
             />
 
-            {/* Arweave TX */}
+            {/* Cloud storage */}
             <div className="space-y-1">
-              <p className="text-xs font-semibold text-muted-foreground">
-                {copyFor(language, "Arweave permanent storage", "Arweave 永久存储")}
-              </p>
-              <div className="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
-                <p className="flex-1 font-mono text-xs text-foreground truncate">
-                  {record.arweaveTxId.slice(0, 12)}…{record.arweaveTxId.slice(-6)}
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  {copyFor(language, "Encrypted file storage", "加密文件云端存储")}
                 </p>
-                <button onClick={() => copyToClipboard(record.arweaveTxId, language)}>
-                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
-                <a
-                  href={record.arweaveUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+                {record.arweaveUrl ? (
+                  <span className="rounded px-1 py-0.5 text-[10px] font-bold bg-sos-success/15 text-sos-success">
+                    {copyFor(language, "Cloud ✓", "云端 ✓")}
+                  </span>
+                ) : (
+                  <span className="rounded px-1 py-0.5 text-[10px] font-bold bg-amber-500/15 text-amber-400">
+                    {copyFor(language, "Local only", "仅本地")}
+                  </span>
+                )}
               </div>
+              {record.arweaveUrl ? (
+                <div className="flex items-center gap-2 rounded-lg bg-card px-3 py-2">
+                  <p className="flex-1 font-mono text-xs text-foreground truncate">
+                    {record.arweaveTxId.slice(0, 12)}…{record.arweaveTxId.slice(-6)}
+                  </p>
+                  <button onClick={() => copyToClipboard(record.arweaveTxId, language)}>
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                  <a href={record.arweaveUrl} target="_blank" rel="noopener noreferrer" className="text-primary">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg bg-amber-500/8 border border-amber-500/20 px-3 py-2">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                  <p className="text-xs text-amber-400/90">
+                    {copyFor(language,
+                      "Stored on this device only. Clear browser data = file lost.",
+                      "仅存储在本设备。清除浏览器数据后文件将丢失。"
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Chain TX — ChainMaker */}
@@ -542,6 +547,147 @@ function HashRow({
           <Copy className="h-3.5 w-3.5 text-muted-foreground" />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Key save section ───────────────────────────────────────────────────────────
+/**
+ * 密钥保存区块
+ *
+ * AES-256 密钥是解密证据的唯一凭证，丢失后无法恢复文件。
+ * 提供三种保存方式，适配手机用户：
+ *   1. 分享（Web Share API）— 发给自己的备忘录 / 微信文件助手
+ *   2. 复制文本          — 粘贴到任意备忘录
+ *   3. 下载 JSON 文件    — 传统下载（桌面端友好）
+ */
+function KeySaveSection({
+  result,
+  onDownloadKey,
+  language,
+}: {
+  result: NonNullable<ReturnType<typeof useEvidenceVault>["result"]>;
+  onDownloadKey: () => void;
+  language: AppLanguage;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  // 将密钥序列化为 Base64 字符串，方便复制粘贴
+  const keyText = (() => {
+    try {
+      const bundle = buildKeyBundle(result.encryptionResult);
+      return btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
+    } catch {
+      return "";
+    }
+  })();
+
+  const handleCopyText = async () => {
+    try {
+      await navigator.clipboard.writeText(keyText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard not available
+    }
+  };
+
+  const handleShare = async () => {
+    const ts = new Date(result.record.createdAt).toISOString().slice(0, 10);
+    const fileName = `the-unmuted-key-${ts}.json`;
+    try {
+      const bundle = buildKeyBundle(result.encryptionResult);
+      const file = new File(
+        [JSON.stringify(bundle, null, 2)],
+        fileName,
+        { type: "application/json" }
+      );
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "非默存证密钥" });
+        return;
+      }
+    } catch {
+      // share failed or cancelled — fall through to text share
+    }
+    // 降级：分享纯文本
+    try {
+      await navigator.share({
+        title: "非默存证密钥",
+        text: keyText,
+      });
+    } catch {
+      // user cancelled or not supported
+    }
+  };
+
+  const canShare = typeof navigator.share === "function";
+
+  return (
+    <div className="space-y-2">
+      {/* 警告标题 */}
+      <div className="flex items-start gap-2 rounded-xl bg-primary/8 border border-primary/20 px-3 py-2.5">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div>
+          <p className="text-xs font-bold text-foreground">
+            {copyFor(language, "Save your decryption key", "保存解密密钥")}
+          </p>
+          <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+            {copyFor(
+              language,
+              "This key is the ONLY way to recover your evidence. If you lose it, the file cannot be opened by anyone.",
+              "这是恢复证据的唯一凭证。丢失后任何人（包括我们）都无法恢复原始文件。"
+            )}
+          </p>
+        </div>
+      </div>
+
+      {/* 三个保存按钮 */}
+      <div className="grid grid-cols-3 gap-2">
+        {/* 1. 分享 */}
+        {canShare && (
+          <button
+            onClick={handleShare}
+            className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold text-foreground active:scale-95 transition-transform"
+          >
+            <Share2 className="h-5 w-5 text-primary" />
+            {copyFor(language, "Share", "分享")}
+          </button>
+        )}
+        {/* 2. 复制文本 */}
+        <button
+          onClick={handleCopyText}
+          className={`flex flex-col items-center gap-1 rounded-xl border py-3 text-xs font-semibold active:scale-95 transition-all ${
+            copied
+              ? "border-sos-success/40 bg-sos-success/10 text-sos-success"
+              : "border-border bg-card text-foreground"
+          } ${!canShare ? "col-span-1" : ""}`}
+        >
+          {copied ? (
+            <CheckCircle2 className="h-5 w-5 text-sos-success" />
+          ) : (
+            <Copy className="h-5 w-5 text-primary" />
+          )}
+          {copied
+            ? copyFor(language, "Copied!", "已复制")
+            : copyFor(language, "Copy text", "复制文本")}
+        </button>
+        {/* 3. 下载文件 */}
+        <button
+          onClick={onDownloadKey}
+          className="flex flex-col items-center gap-1 rounded-xl border border-border bg-card py-3 text-xs font-semibold text-foreground active:scale-95 transition-transform"
+        >
+          <Download className="h-5 w-5 text-primary" />
+          {copyFor(language, "Download", "下载文件")}
+        </button>
+      </div>
+
+      <p className="text-center text-[11px] text-muted-foreground leading-4">
+        {copyFor(
+          language,
+          'Tip: "Share" sends to WeChat / Notes / Files app directly.',
+          '提示：点「分享」可直接发到微信文件助手或备忘录。'
+        )}
+      </p>
     </div>
   );
 }

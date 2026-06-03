@@ -10,6 +10,7 @@ import { useLocale, copyFor } from "@/lib/locale";
 import { Eye, EyeOff, KeyRound, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import FeedbackWidget from "@/components/FeedbackWidget";
+import DonationWidget from "@/components/DonationWidget";
 import SettingsWidget from "@/components/SettingsWidget";
 import { hasPassword, verifyPassword, savePassword } from "@/lib/userCredentials";
 
@@ -94,6 +95,7 @@ export default function Index() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <DonationWidget language={language} />
           <FeedbackWidget language={language} />
           {isSignedIn && (
             <SettingsWidget
