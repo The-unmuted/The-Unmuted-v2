@@ -1,13 +1,13 @@
-# The Unmuted v2 | 非默 v2
+# The Unmuted | 非默
 
 > Make truth harder to erase. Make seeking help easier to begin.  
 > 让真相不被轻易抹去，让求助可以更早开始。
 
-**The Unmuted v2** is a bilingual, mobile-first personal safety app for people facing domestic violence, sexual harassment, stalking, coercion, or other gender-based harm.
+**The Unmuted** is a bilingual, mobile-first personal safety app for people facing domestic violence, sexual harassment, stalking, coercion, or other gender-based harm.
 
 This version focuses on individual emergency use: trusted-contact SOS, encrypted evidence saving, guided post-report notes, and fast access to mental health and legal aid resources.
 
-**非默 v2** 是一款面向家暴、性骚扰、跟踪、胁迫及其他性别伤害场景的双语移动端个人安全工具。
+**非默** 是一款面向家暴、性骚扰、跟踪、胁迫及其他性别伤害场景的双语移动端个人安全工具。
 
 当前版本聚焦个人紧急使用：可信联系人 SOS、加密存证、事后记录指引，以及心理援助和法律援助资源入口。
 
@@ -16,11 +16,6 @@ This version focuses on individual emergency use: trusted-contact SOS, encrypted
 ## Live Demo | 在线演示
 
 - Production: https://the-unmuted.vercel.app/
-- CloudBase test domain: `https://theunmuted-v2-d2gyh0rux2a05de92-1434116173.tcloudbaseapp.com/`
-
-Note: Tencent CloudBase's default `*.tcloudbaseapp.com` domain may show a warning page or trigger download behavior on some phones because it is a test domain. For sharing and judging, please use the Vercel link.
-
-提示：腾讯云 CloudBase 默认测试域名可能在手机端显示访问提示页，部分环境也可能触发下载行为。正式展示和评审请使用 Vercel 链接。
 
 ---
 
@@ -31,12 +26,10 @@ Note: Tencent CloudBase's default `*.tcloudbaseapp.com` domain may show a warnin
 - Users can add trusted emergency contacts.
 - SOS opens the phone's native SMS flow with a pre-filled emergency message.
 - The message can include location information when the user grants location permission.
-- Contacts and SOS templates are stored on the user's device.
 
 - 用户可以添加可信紧急联系人。
 - SOS 会打开系统短信，自动填入求助内容。
 - 在用户授权定位后，求助内容可包含位置信息。
-- 联系人与 SOS 模板保存在用户本机。
 
 ### 2. Evidence Vault | 加密存证
 
@@ -139,44 +132,6 @@ Our goal is to keep core safety access affordable.
 | Evidence timestamping | ChainMaker (长安链) testnet integration with deterministic simulation fallback |
 | Feedback / forms | Supabase |
 | Deployment | Vercel, Tencent CloudBase static hosting |
-
----
-
-## Getting Started | 本地运行
-
-```bash
-npm install
-npm run dev
-```
-
-Build for production:
-
-```bash
-npm run build
-```
-
----
-
-## Environment Variables | 环境变量
-
-Create `.env.local` for optional real-service integrations:
-
-```bash
-# Privy email OTP
-VITE_PRIVY_APP_ID=your_privy_app_id
-
-# Supabase feedback / storage
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# ChainMaker evidence anchoring
-VITE_CHAINMAKER_API_KEY=your_chainmaker_api_key
-VITE_CHAINMAKER_ENDPOINT=your_chainmaker_endpoint_optional
-```
-
-Without `VITE_CHAINMAKER_API_KEY`, the evidence anchoring flow runs in deterministic simulation mode.
-
-不设置 `VITE_CHAINMAKER_API_KEY` 时，存证锚定流程会以确定性模拟模式运行。
 
 ---
 
