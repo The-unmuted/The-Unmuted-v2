@@ -5,11 +5,11 @@
 
 **The Unmuted v2** is a bilingual, mobile-first personal safety app for people facing domestic violence, sexual harassment, stalking, coercion, or other gender-based harm.
 
-This version focuses on individual emergency use: trusted-contact SOS, encrypted evidence saving, guided post-report notes, and fast access to mental health and legal aid resources. We removed the community mutual-aid and map parts from this hackathon version because they are not reliable enough yet for a safety-critical product.
+This version focuses on individual emergency use: trusted-contact SOS, encrypted evidence saving, guided post-report notes, and fast access to mental health and legal aid resources.
 
 **非默 v2** 是一款面向家暴、性骚扰、跟踪、胁迫及其他性别伤害场景的双语移动端个人安全工具。
 
-当前版本聚焦个人紧急使用：可信联系人 SOS、加密存证、事后记录指引，以及心理援助和法律援助资源入口。我们暂时移除了社区互助和地图功能，因为这些能力目前还没有达到安全产品所需要的可靠程度。
+当前版本聚焦个人紧急使用：可信联系人 SOS、加密存证、事后记录指引，以及心理援助和法律援助资源入口。
 
 ---
 
@@ -65,11 +65,9 @@ Note: Tencent CloudBase's default `*.tcloudbaseapp.com` domain may show a warnin
 ### 4. Mental Health Support | 心理援助
 
 - The Mental Health tab lists verified crisis hotline resources.
-- We intentionally removed website buttons from this tab to keep emergency actions simple.
 - Current cards focus on direct phone access, coverage area, hours, and location.
 
 - 心理援助页面展示已核实的心理危机热线资源。
-- 为了让紧急场景更简单，我们移除了该页面的网站入口。
 - 当前卡片重点展示电话、覆盖范围、服务时间和所在地。
 
 ### 5. Legal Aid | 法律援助
@@ -91,14 +89,6 @@ Note: Tencent CloudBase's default `*.tcloudbaseapp.com` domain may show a warnin
 - 用户可通过一个小型语言按钮切换中英文。
 - 页面同一时间只展示一种语言。
 - 当前视觉风格偏柔和、安静、重视隐私感。
-
----
-
-## What We Removed for This Version | 本版本暂时移除的部分
-
-The previous prototype explored community mutual aid, nearby support alerts, map-based risk display, DAO-style governance, and open supporter matching. We removed those from the current hackathon submission because safety features should not be shown as available until they can be made reliable, moderated, abuse-resistant, and legally appropriate.
-
-早期原型曾探索社区互助、附近求助提醒、地图风险显示、DAO 治理和开放支援者匹配。当前黑客松版本暂时移除这些部分，因为安全类功能不能在尚未可靠、可审核、防滥用和合规之前展示为可用能力。
 
 ---
 
