@@ -106,7 +106,7 @@ export default function Index() {
           )}
           <button
             onClick={() => setLanguage(language === "en" ? "zh" : "en")}
-            className="rounded-full border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-accent"
+            className="inline-flex shrink-0 min-w-[3.75rem] items-center justify-center whitespace-nowrap rounded-full border border-border bg-card/90 px-3 py-2 text-[11px] font-semibold leading-none text-primary transition-colors hover:bg-accent"
           >
             {language === "en" ? "中文" : "EN"}
           </button>

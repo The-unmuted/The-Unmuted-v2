@@ -3,7 +3,7 @@
  * Section 1: Verified crisis hotlines (real, nationwide)
  * Section 2: Vetted counselors (coming soon placeholder)
  */
-import { Brain, Phone, Clock, ShieldCheck, Globe, MapPin, ExternalLink } from "lucide-react";
+import { Brain, Phone, Clock, ShieldCheck, MapPin } from "lucide-react";
 import { AppLanguage, copyFor } from "@/lib/locale";
 
 interface PsychPageProps {
@@ -15,8 +15,6 @@ interface Hotline {
   name: string;
   nameEn: string;
   phone: string;
-  website: string;
-  websiteUrl: string;
   location: string;
   locationEn: string;
   hours: string;
@@ -34,8 +32,6 @@ const HOTLINES: Hotline[] = [
     name: "全国统一心理援助热线",
     nameEn: "National Mental Health Hotline",
     phone: "12356",
-    website: "nhc.gov.cn",
-    websiteUrl: "https://www.nhc.gov.cn/",
     location: "全国统一接入",
     locationEn: "Nationwide unified access",
     hours: "24小时",
@@ -50,8 +46,6 @@ const HOTLINES: Hotline[] = [
     name: "北京市心理援助热线",
     nameEn: "Beijing Psychological Assistance Hotline",
     phone: "010-82951332",
-    website: "crisis.org.cn",
-    websiteUrl: "http://www.crisis.org.cn/",
     location: "北京回龙观医院 / 北京",
     locationEn: "Beijing Huilongguan Hospital / Beijing",
     hours: "24小时",
@@ -66,8 +60,6 @@ const HOTLINES: Hotline[] = [
     name: "上海市心理热线",
     nameEn: "Shanghai Mental Health Hotline",
     phone: "962525",
-    website: "smhc.org.cn",
-    websiteUrl: "https://www.smhc.org.cn/",
     location: "上海市精神卫生中心 / 上海",
     locationEn: "Shanghai Mental Health Center / Shanghai",
     hours: "24小时",
@@ -82,8 +74,6 @@ const HOTLINES: Hotline[] = [
     name: "广州心理援助热线",
     nameEn: "Guangzhou Mental Health Hotline",
     phone: "020-81899120",
-    website: "wjw.gz.gov.cn",
-    websiteUrl: "https://wjw.gz.gov.cn/",
     location: "广州市 / 广州",
     locationEn: "Guangzhou / Guangzhou",
     hours: "24小时",
@@ -149,23 +139,13 @@ export default function PsychPage({ language }: PsychPageProps) {
                   </div>
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3">
                 <a
                   href={`tel:${h.phone}`}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary/10 py-2.5 text-sm font-bold text-primary transition-transform active:scale-95"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary/10 py-2.5 text-sm font-bold text-primary transition-transform active:scale-95"
                 >
                   <Phone className="h-4 w-4" />
                   {h.phone}
-                </a>
-                <a
-                  href={h.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card py-2.5 text-xs font-bold text-foreground/70 transition-transform active:scale-95"
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  {h.website}
-                  <ExternalLink className="h-3 w-3 opacity-50" />
                 </a>
               </div>
             </div>
