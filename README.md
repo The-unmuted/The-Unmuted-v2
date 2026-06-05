@@ -106,12 +106,6 @@ Once verified helpers are added, the app will provide end-to-end encrypted talki
 
 接入可信帮助者后，应用将为用户与律师或心理咨询师提供端到端加密沟通室。初始阶段可以提供一段免费沟通，例如有限次数消息或一次短时初谈；在双方确认后，再进入现实中的付费服务。
 
-### Community Features Later | 社区能力后置
-
-Community mutual aid, nearby alerts, and risk maps are still meaningful ideas, but they need stronger verification, moderation, anti-abuse design, and legal review. We will revisit them after the personal emergency flow is stable.
-
-社区互助、附近提醒和风险地图仍然有价值，但需要更强的身份验证、内容审核、防滥用机制和法律审查。我们会在个人紧急流程稳定之后再重新考虑这些功能。
-
 ---
 
 ## Business Model | 商业模式设想
