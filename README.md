@@ -3,11 +3,11 @@
 > Make truth harder to erase. Make seeking help easier to begin.  
 > 让真相不被轻易抹去，让求助可以更早开始。
 
-**The Unmuted** is a bilingual, mobile-first personal safety app for people facing domestic violence, sexual harassment, stalking, coercion, or other gender-based harm.
+**The Unmuted** is a bilingual mobile personal safety tool designed for scenarios involving sexual harassment, stalking, sexual assault, coercion, domestic violence, and other gender-based harm."
 
 This version focuses on individual emergency use: trusted-contact SOS, encrypted evidence saving, guided post-report notes, and fast access to mental health and legal aid resources.
 
-**非默** 是一款面向家暴、性骚扰、跟踪、胁迫及其他性别伤害场景的双语移动端个人安全工具。
+**非默** 是一款面向性骚扰、跟踪、性侵、胁迫、家暴及其他性别伤害场景的双语移动端个人安全工具。
 
 当前版本聚焦个人紧急使用：可信联系人 SOS、加密存证、事后记录指引，以及心理援助和法律援助资源入口。
 
