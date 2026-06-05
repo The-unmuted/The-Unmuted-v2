@@ -38,9 +38,9 @@ export default function DonationWidget({ language }: DonationWidgetProps) {
       <button
         onClick={() => setOpen(true)}
         aria-label={copyFor(language, "Support us", "支持我们")}
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card/90 text-primary transition-colors hover:bg-accent"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border bg-card/90 text-primary transition-colors hover:bg-accent"
       >
-        <Heart className="h-3.5 w-3.5" />
+        <Heart className="h-3 w-3" />
       </button>
 
       {/* 蒙层 */}

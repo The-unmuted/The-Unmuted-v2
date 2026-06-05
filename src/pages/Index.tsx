@@ -78,23 +78,23 @@ export default function Index() {
   return (
     <div className="flex h-[100dvh] min-h-0 flex-col bg-background">
       {/* Top bar — sits below the iOS status bar (safe-area-inset-top handled by body) */}
-      <header className="flex shrink-0 items-center justify-between border-b border-border/80 px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
+      <header className="flex shrink-0 items-center justify-between border-b border-border/80 px-3 py-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <img
             src={LOGO_SRC}
             alt=""
-            className="h-12 w-12 object-contain drop-shadow-[0_0_18px_hsl(var(--primary)/0.32)]"
+            className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_0_14px_hsl(var(--primary)/0.28)]"
           />
-          <div className="leading-tight">
-            <span className="block text-sm font-black tracking-[0.08em] text-foreground">
+          <div className="min-w-0 leading-tight">
+            <span className="block text-[13px] font-black tracking-[0.06em] text-foreground">
               {copyFor(language, "THE UNMUTED", "非默")}
             </span>
-            <span className="block whitespace-nowrap text-[11px] tracking-[0.16em] text-primary/80">
+            <span className="block whitespace-nowrap text-[9px] tracking-[0.08em] text-primary/80">
               {copyFor(language, BRAND_BANNER_EN, BRAND_BANNER_ZH)}
             </span>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1">
           <DonationWidget language={language} />
           <FeedbackWidget language={language} />
           {isSignedIn && (
@@ -106,7 +106,7 @@ export default function Index() {
           )}
           <button
             onClick={() => setLanguage(language === "en" ? "zh" : "en")}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-border bg-card/90 text-xs font-bold leading-none text-primary transition-colors hover:bg-accent"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center whitespace-nowrap rounded-full border border-border bg-card/90 text-[11px] font-bold leading-none text-primary transition-colors hover:bg-accent"
           >
             {language === "en" ? "中" : "EN"}
           </button>
