@@ -1,214 +1,188 @@
-![Auto Assign](https://github.com/The-unmuted/demo-repository/actions/workflows/auto-assign.yml/badge.svg)
-
-![Proof HTML](https://github.com/The-unmuted/demo-repository/actions/workflows/proof-html.yml/badge.svg)
-
-# The Unmuted | 非默
+# The Unmuted v2.0 | 非默 v2.0
 
 > *Make truth indelible; ensure no survivor stands alone.*  
 > *让真相不被抹去，让求助不再孤身一人。*
 
-**The Unmuted** is a bilingual, mobile-first demo repository for a public safety collaboration product focused on anonymous help reporting, mutual support, map-based alerts, evidence preservation, and DAO-based survivor aid. It combines privacy-preserving identity, Phantom wallet support, email OTP signup through Privy, local encryption, demo on-chain proof, live-location SOS, supporter matching, and an alert map that visualizes reported help requests with purple/yellow color-graded risk levels and report counts.
+**The Unmuted v2.0** is a bilingual, mobile-first safety app for survivors of domestic violence and gender-based harm — rebuilt for mainland China compliance. All cryptocurrency and wallet dependencies have been removed. Evidence is now anchored on ChainMaker (长安链), China's judicial alliance blockchain. Emergency SOS opens a pre-filled SMS to trusted contacts. The DAO governance layer has been replaced with a verified NGO directory so survivors can find real local help immediately.
 
-**非默** 是一个双语、移动端优先的公共安全协作产品 Demo 仓库，面向匿名求助上报、互助支援、地图预警、证据保存与 DAO 救助治理。当前版本整合了隐私身份、Phantom 钱包、Privy 邮箱 OTP 注册、本地加密、演示链上存证、实时位置 SOS、支援者匹配，以及根据求助上报数量生成紫黄颜色分级和数量提示的预警地图。
+**非默 v2.0** 是面向家暴及性别暴力受害者的双语移动端安全应用，本版本针对中国大陆合规性全面重构。所有加密货币与钱包依赖已移除，改为使用中国司法区块链联盟链（长安链）进行存证锚定，紧急 SOS 将向信任联系人发送预填内容的短信，DAO 治理层改为可信 NGO 机构目录，让求助者能第一时间找到真实本地支援资源。
+
+---
+
+## What Changed from v1.0 | v2.0 核心变更
+
+| Area | v1.0 | v2.0 |
+|------|------|------|
+| Evidence anchoring | Solana Memo (Devnet) | ChainMaker 长安链 (testnet) |
+| SOS trigger | 3s hold → blockchain tx | 5s hold → SMS to emergency contacts |
+| Login | Email OTP + Phantom wallet | Email OTP only (no crypto) |
+| Aid governance | DAO proposals + MagicBlock TEE | NGO directory: browse + apply |
+| Bottom nav | Help / Map / Support / DAO | Help / Map / Support / NGOs |
 
 ---
 
 ## Current Demo | 当前版本
 
 - **Bilingual UI:** English and Chinese switch with one button; the app shows one language at a time.
-- **First-time signup:** Users sign up once, then stay signed in locally. Signup supports Phantom wallet signature or email contact/Privy OTP.
-- **Soft safety design:** Gentle purple interface, mark-only logo, and the banner “secure, record, protect, speak.”
-- **Main flow:** The first page centers emergency help and community help, with evidence capture available after a report.
-- **Bottom tabs:** Help, Map, Support, and DAO.
-- **Map page:** The Map page displays the warning map, color legend, report counts, user location, and map-based alert zones.
-- **Support page:** The Support page provides the supporter workflow for nearby anonymous help requests.
-- **DAO page:** The DAO page supports aid proposals, voting, professional SBT-style credentials, and a MagicBlock PER-authenticated private DAO room.
-- **Solana Devnet program:** A minimal The Unmuted privacy-checkpoint program is deployed on Solana Devnet for the hackathon demo.
+- **First-time signup:** Email OTP via Privy. No wallet required anywhere in the app.
+- **Soft safety design:** Gentle purple interface, mark-only logo, and the banner "secure, record, protect, speak."
+- **Bottom tabs:** Help, Map, Support, NGOs.
+- **Map page:** Displays warning zones from reported help requests, color-graded by density.
+- **Support page:** Supporter workflow for nearby anonymous help requests, P2P encrypted chat.
+- **NGO page:** Browse verified organisations by category; apply for directory listing; post-SOS suggestion sheet.
 
 - **双语界面：** 中英文通过按钮切换，同一时间只展示一种语言。
-- **首次注册：** 用户首次进入需要注册，之后在本地保持登录状态。支持 Phantom 钱包签名，也支持邮箱联系 / Privy OTP。
-- **柔和安全视觉：** 以紫色系为主，使用图形 Logo，并保留 “secure, record, protect, speak / 安全，记录，守护，发声” 的品牌语义。
-- **主流程：** 首页突出紧急求助与社区求助，完成上报后可进入存证流程。
-- **底部导航：** Help、Map、Support、DAO。
-- **地图页面：** Map 页面展示预警地图、颜色图例、上报数量、用户定位和地图预警区域。
-- **支援页面：** Support 页面提供面向附近匿名求助的支援者流程。
-- **DAO 页面：** DAO 页面支持救助提案、投票、专业人士 SBT 风格认证，以及 MagicBlock PER 授权的私密 DAO 审核室。
-- **Solana Devnet 程序：** 为黑客松 Demo 部署了一个最小化的 The Unmuted 隐私检查点程序。
+- **首次注册：** 通过 Privy 邮箱 OTP 注册，全程无需钱包。
+- **柔和安全视觉：** 紫色系为主，图形 Logo，保留 "secure, record, protect, speak / 安全，记录，守护，发声" 的品牌语义。
+- **底部导航：** Help、Map、Support、NGOs。
+- **地图页面：** 根据求助上报生成颜色分级预警区域。
+- **支援页面：** 附近匿名求助的支援者流程，支持端到端加密聊天通道。
+- **NGO 页面：** 按类别浏览认证机构；申请入驻目录；SOS 结束后显示推荐机构。
 
 ---
 
 ## Core Features | 核心功能
 
-### 1. Help Reporting | 求助上报
+### 1. SOS Emergency Alert | SOS 紧急求助
 
-- One primary SOS flow for immediate emergency reporting.
-- Community Help supports non-emergency requests such as emotional support, accompaniment, and practical information.
-- Live location can be attached to emergency alerts for supporter response.
-- Non-emergency support uses approximate location to reduce privacy exposure.
-- After reporting, users can add evidence when they are safe.
+- Hold the SOS button for **5 seconds** to trigger an alert.
+- On trigger, the app acquires GPS coordinates and opens the native SMS app pre-filled with a bilingual help message and a Google Maps link.
+- Emergency contacts (name + phone) are stored privately in device localStorage — no server involved.
+- Multiple contacts are shown as tap-able links if the first SMS is sent.
+- After the situation resolves, "I'm Safe" opens the NGO suggestion sheet.
+- A no-contacts state prompts the user to add at least one contact before relying on SOS.
 
-- 核心 SOS 流程用于紧急求助上报。
-- 社区求助支持非紧急场景，例如情绪支持、陪同和实用信息协助。
-- 紧急上报可附带实时位置，方便支援者响应。
-- 非紧急支援使用大致位置，降低隐私暴露。
-- 完成上报后，用户可以在安全时补充证据。
+- 长按 SOS 按钮 **5 秒**触发求助。
+- 触发后自动获取 GPS 坐标，打开系统短信应用，预填双语求助内容与 Google Maps 定位链接。
+- 紧急联系人（姓名 + 电话）仅保存在设备本地 localStorage，不上传服务器。
+- 如需联系多人，页面提供可点击的额外联系人链接。
+- 情况解除后点击"我安全了"弹出 NGO 推荐卡片。
+- 若尚未添加联系人，系统提示先完成设置再依赖 SOS 功能。
 
 ### 2. Map Alerts | 地图预警
 
 - The Map page directly displays warning zones based on reported help requests.
-- Reported help requests are grouped into map zones and visualized with color-graded alert blocks.
-- Purple and yellow are used as the main contrast colors to match the product UI while keeping clear light/dark separation.
+- Reported help requests are grouped into map zones and visualised with colour-graded alert blocks.
+- Purple and yellow are the main contrast colours, matching the product UI.
 - Each alert zone shows a report count, making the level of reported need visible at a glance.
-- The map supports drag, zoom in/out, user location, and map-local scrolling.
-- Demo alert records help reviewers understand how report density becomes visible on the map.
+- The map supports drag, zoom, user location, and map-local scrolling.
 
 - Map 页面直接展示基于求助上报生成的预警区域。
-- 用户上报的求助会聚合为地图区域，并通过颜色分级提示预警强度。
-- 颜色以紫色和黄色作为主要对比，既贴合产品 UI，也保留清晰的明暗区分。
+- 上报求助聚合为地图区域，通过颜色分级提示预警强度。
+- 颜色以紫色和黄色作为主要对比，贴合产品 UI。
 - 每个预警区域展示上报数量，让求助密度一眼可见。
 - 地图支持拖动、缩放、用户定位和地图内部滚动。
-- 页面内置演示预警记录，方便评审理解求助密度如何在地图上可视化。
 
 ### 3. Support | 互助支援
 
-- The Support page focuses on supporter mode.
 - Community members can opt in as supporters and watch nearby anonymous requests.
 - SOS support alerts and community help requests are shown separately inside the support workflow.
 - Supporters can open encrypted P2P-style chat rooms for follow-up.
-- Built-in demo examples help reviewers understand the support flow quickly.
 
-- Support 页面聚焦支援者模式。
 - 社区成员可选择成为支援者，查看附近匿名求助。
 - SOS 紧急支援与社区非紧急求助在支援流程中分开展示。
 - 支援者可进入端到端加密风格的匿名聊天通道继续沟通。
-- 页面内置演示案例，方便评审快速理解支援流程。
 
 ### 4. Evidence Preservation | 安全存证
 
 - Evidence capture is available after a help report.
-- Photo, video, and audio evidence can be encrypted locally with AES-256-GCM.
-- Encrypted evidence is stored in a demo Arweave-style vault.
-- Hashes are anchored through a Solana Memo-style proof flow, with simulation fallback for demo reliability.
+- Photo, video, and audio evidence is encrypted locally with AES-256-GCM.
+- Encrypted evidence is uploaded to an Arweave-style demo vault.
+- Evidence hashes are anchored on **ChainMaker (长安链)**, China's judicial alliance blockchain.
+  - If `VITE_CHAINMAKER_API_KEY` is set, a real REST call is made to the ChainMaker testnet.
+  - Without a key, a deterministic simulation runs so the demo works for reviewers without infrastructure.
+  - Explorer: `https://testnet.chainmaker.org.cn/explorer/tx/<txHash>`
+- No wallet or browser extension required — ChainMaker uses certificate-based auth server-side.
 - Users can download a local key bundle for later decryption.
 
 - 存证功能可在求助上报后使用。
-- 图片、视频和音频证据可在本地通过 AES-256-GCM 加密。
-- 加密证据进入演示版 Arweave 风格存证库。
-- 哈希通过 Solana Memo 风格流程进行时间证明，Demo 中支持模拟回退。
+- 图片、视频和音频证据通过本地 AES-256-GCM 加密。
+- 加密证据上传至演示版 Arweave 风格存证库。
+- 证据哈希锚定至**长安链（ChainMaker）**——中国司法区块链联盟链。
+  - 设置 `VITE_CHAINMAKER_API_KEY` 后，系统向长安链测试网发起真实 REST 调用。
+  - 未设置密钥时以确定性模拟替代，方便评审无需基础设施即可体验完整流程。
+  - 区块链浏览器：`https://testnet.chainmaker.org.cn/explorer/tx/<txHash>`
+- 全程无需钱包或浏览器插件——长安链采用服务端证书认证。
 - 用户可下载本地密钥包，方便后续解密。
 
-### 5. DAO | DAO 治理与救助
+### 5. NGO Directory | NGO 机构目录
 
-- Survivors can create aid proposals for legal, mental health, or community support.
-- DAO voting is tied to anonymous identity, reducing repeated random identities.
-- Professionals can claim SBT-style credentials for expert endorsements.
-- The professional SBT flow includes a front-end-only certification upload page for demo review.
-- The DAO page includes a MagicBlock Private DAO Room with real PER client auth: it verifies the MagicBlock TEE RPC and asks Phantom to sign an auth challenge before opening an authenticated private session endpoint.
-- A minimal The Unmuted Solana Devnet program is deployed for privacy-safe DAO/evidence checkpoints. It accepts checkpoint instruction types and logs that only hashes/checkpoints should be submitted on-chain.
+- **Browse tab:** Filter by service type (Legal / Mental Health / Shelter / Hotline) and location text search. Each card shows organisation name, coverage area, phone, and website.
+- **Apply tab:** NGOs and nonprofits can submit an application form. Submissions go to Supabase `ngo_applications` for admin review.
+- **Post-SOS suggestion sheet:** After "I'm Safe", the app surfaces the top 3 relevant organisations based on help type, with direct contact buttons.
+- Seed data includes 5 verified demo organisations covering major Chinese cities.
 
-- 受助者可发起法律、心理或社区支持提案。
-- DAO 投票绑定匿名身份，降低重复随机身份带来的滥用。
-- 专业人士可认领 SBT 风格认证，提供专家背书。
-- 专业 SBT 认领包含前端演示版认证材料上传页面。
-- DAO 页面包含 MagicBlock 私密 DAO 审核室，并接入真实 PER 客户端授权：先验证 MagicBlock TEE RPC，再通过 Phantom 签名授权挑战，最后打开已授权的私密会话端点。
-- 已部署最小化 The Unmuted Solana Devnet 程序，用于隐私安全的 DAO / 存证检查点。程序接收检查点指令类型，并强调链上只应提交哈希或检查点。
-
-### 6. Solana Devnet Deployment | Solana Devnet 部署
-
-- **Program ID:** `BAnZZzYmRkonjWMS1Zhn8bbJrX8nNT9RMvhpKdeV722k`
-- **Network:** Solana Devnet
-- **Explorer:** https://explorer.solana.com/address/BAnZZzYmRkonjWMS1Zhn8bbJrX8nNT9RMvhpKdeV722k?cluster=devnet
-- **Deploy transaction:** `3gNG55ZqoMVW6P4CzADsS8frEJuB81qXcn6qHUGsZmAMtSVNvVX4hB3qEepynN12bTUmbrqkqPieg9CYFAtZEDrT`
-- **Upgrade authority:** `5sQsDXrTzfrhNx34Q2NuLjYtsSQvrGb79LBU8z8uEsgz`
-- **Program source:** `programs/the_unmuted_program/src/lib.rs`
-- **What it does now:** The program is intentionally small for demo safety. It receives privacy-safe checkpoint instructions for SOS evidence, DAO private review, and professional SBT review, then logs that only hashes/checkpoints should go on-chain.
-- **Production path:** Replace log-only checkpoints with structured PDA accounts, hashed evidence commitments, DAO decision state, SBT issuance status, and MagicBlock settlement commitments.
-
-- **程序 ID：** `BAnZZzYmRkonjWMS1Zhn8bbJrX8nNT9RMvhpKdeV722k`
-- **网络：** Solana Devnet
-- **浏览器：** https://explorer.solana.com/address/BAnZZzYmRkonjWMS1Zhn8bbJrX8nNT9RMvhpKdeV722k?cluster=devnet
-- **部署交易：** `3gNG55ZqoMVW6P4CzADsS8frEJuB81qXcn6qHUGsZmAMtSVNvVX4hB3qEepynN12bTUmbrqkqPieg9CYFAtZEDrT`
-- **升级权限：** `5sQsDXrTzfrhNx34Q2NuLjYtsSQvrGb79LBU8z8uEsgz`
-- **程序源码：** `programs/the_unmuted_program/src/lib.rs`
-- **当前功能：** Demo 版本刻意保持最小化。它接收 SOS 存证、DAO 私密审核、专业 SBT 审核等隐私安全检查点指令，并在日志中强调链上只提交哈希 / 检查点。
-- **正式路径：** 后续可替换为结构化 PDA 账户、证据哈希承诺、DAO 决策状态、SBT 签发状态，以及 MagicBlock 结算承诺。
-
-### 7. MagicBlock PER Integration | MagicBlock PER 集成
-
-- **TEE RPC:** The DAO page connects to MagicBlock's Devnet TEE RPC at `https://devnet-tee.magicblock.app`.
-- **TEE verification:** The app calls `verifyTeeRpcIntegrity` from `@magicblock-labs/ephemeral-rollups-sdk` before opening a private review session.
-- **Wallet auth:** The app calls `getAuthToken`; Phantom signs the MagicBlock auth challenge and receives a temporary PER token.
-- **Private session endpoint:** The app builds an authenticated TEE RPC / WebSocket endpoint for the DAO private review room.
-- **Current boundary:** The PER client auth flow is live. Full private account delegation still requires upgrading the Solana program to Anchor with MagicBlock delegation and permission CPI hooks.
-- **Production path:** Sensitive aid proposals and professional certification packets can be delegated into a PER review room, while only approved DAO results or settlement commitments are committed back to Solana.
-
-- **TEE RPC：** DAO 页面连接 MagicBlock Devnet TEE RPC：`https://devnet-tee.magicblock.app`。
-- **TEE 验证：** 应用先调用 `@magicblock-labs/ephemeral-rollups-sdk` 的 `verifyTeeRpcIntegrity`，再打开私密审核会话。
-- **钱包授权：** 应用调用 `getAuthToken`；Phantom 签名 MagicBlock 授权挑战后获得临时 PER token。
-- **私密会话端点：** 应用会生成已授权的 TEE RPC / WebSocket 端点，用于 DAO 私密审核室。
-- **当前边界：** PER 客户端授权流程已接入真实 SDK。完整私密账户 delegation 仍需要把 Solana 程序升级为带 MagicBlock delegation 与 permission CPI hooks 的 Anchor 程序。
-- **正式路径：** 敏感救助提案与专业认证材料可被委托进入 PER 审核室，公开链上只提交审核通过后的 DAO 结果或结算承诺。
+- **找机构 tab：** 按服务类型（法律援助 / 心理支援 / 庇护所 / 热线）和地区文本筛选。每张卡片展示机构名称、服务地区、电话及官网。
+- **申请入驻 tab：** NGO 和非营利组织可提交申请表，数据提交至 Supabase `ngo_applications` 等待管理员审核。
+- **SOS 后推荐：** 点击"我安全了"后，根据求助类型推荐最相关的 3 家机构，提供直接联系按钮。
+- 内置 5 家覆盖中国主要城市的认证演示机构数据。
 
 ---
 
 ## Tech Stack | 技术栈
 
 | Layer | Technology |
-| --- | --- |
+|-------|------------|
 | Frontend | React 18, TypeScript, Vite |
-| Styling | Tailwind CSS, shadcn/ui components, lucide-react |
-| Auth | Privy email OTP, Phantom wallet signature, local fallback |
-| Chain | Solana Devnet custom program, Phantom, Solana Memo-style anchoring |
-| Storage | Demo Arweave-style vault, IndexedDB, localStorage |
+| Styling | Tailwind CSS, shadcn/ui, lucide-react |
+| Auth | Privy email OTP, local bcrypt password hash (localStorage) |
+| Evidence chain | ChainMaker 长安链 testnet (REST API, cert-based, no wallet) |
+| Storage | Arweave-style demo vault, Supabase (NGO directory), localStorage |
 | Encryption | Web Crypto API, AES-256-GCM |
-| P2P Demo | Gun.js for support/chat/DAO demo broadcasts |
-| Map Alerts | OpenStreetMap tiles, local alert records, color-graded zones |
-| Privacy Compute | MagicBlock PER TEE RPC verification, Phantom auth token, private DAO review session UI |
+| P2P Demo | Gun.js for support / chat demo broadcasts |
+| Map Alerts | OpenStreetMap tiles, local alert records, colour-graded zones |
+| Emergency SOS | Native SMS via `sms:` URI scheme, GPS geolocation API |
 
 ---
 
 ## Getting Started | 运行
 
-https://the-unmuted.vercel.app/
+Live demo: **https://the-unmuted.vercel.app/**
+
+```bash
+npm install
+npm run dev
+```
 
 ---
 
-## Environment | 环境变量
+## Environment Variables | 环境变量
 
-Create `.env.local` when using real Privy email OTP:
+Create `.env.local` for optional real-service integrations:
 
 ```bash
+# Privy — enables real email OTP signup
 VITE_PRIVY_APP_ID=your_privy_app_id
-VITE_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+
+# Supabase — NGO directory (already configured in the demo)
+VITE_SUPABASE_URL=https://iisjendxxmxpgwohckiq.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+# ChainMaker — leave blank for demo simulation
+VITE_CHAINMAKER_API_KEY=
 ```
 
-`VITE_PRIVY_APP_ID` enables real Privy email OTP signup. Without it, the app still runs for demos with Phantom signup and limited email-contact identity.
+Without `VITE_CHAINMAKER_API_KEY`, the evidence anchoring flow runs in deterministic simulation mode — reviewers can test the full flow with no infrastructure required.
 
-`VITE_SOLANA_RPC_URL` can be used for future production RPC configuration. The current evidence anchoring demo can fall back to simulation so reviewers can test the flow without funds.
+不设置 `VITE_CHAINMAKER_API_KEY` 时，存证锚定流程以确定性模拟模式运行，无需基础设施即可体验完整流程。
 
 ---
 
 ## Demo Notes | Demo 说明
 
-- This repository is the demo codebase for The Unmuted final product prototype.
-- Some Web3 operations intentionally have simulation fallbacks so the demo works without paid infrastructure or wallet funding.
-- The app uses Help, Map, Support, and DAO as the main bottom navigation tabs.
-- The Map page shows purple/yellow alert grading and report counts for map-based risk awareness.
-- The Support page provides the supporter workflow for nearby anonymous requests.
-- Certification upload in the DAO tab is front-end-only for demo review.
-- The MagicBlock Private DAO Room now uses MagicBlock's SDK for TEE RPC verification and Phantom auth token creation. Full private account delegation still needs a follow-up Anchor/MagicBlock program upgrade.
-- The custom Solana Devnet program is live, but the current frontend still uses Memo anchoring/simulation for user-triggered evidence flows. The next integration step is wiring frontend checkpoint instructions directly into the deployed program.
-- Private evidence keys are user-held. Losing the downloaded key bundle can make encrypted evidence unrecoverable in a production design.
+- All cryptocurrency dependencies have been removed. No Phantom, no Solana, no wallet prompt anywhere.
+- The SMS SOS flow requires a mobile device; on desktop it opens the default mail/messaging client.
+- Emergency contacts are stored only on-device (localStorage). No phone numbers are transmitted to any server.
+- Evidence encryption keys are user-held. Losing the downloaded key bundle makes encrypted evidence unrecoverable.
+- The NGO directory falls back to 5 hardcoded seed organisations if Supabase is unreachable.
+- ChainMaker anchoring uses deterministic simulation if `VITE_CHAINMAKER_API_KEY` is not set.
 
-- 本仓库是 The Unmuted 最终产品原型的 Demo 代码库。
-- 部分 Web3 操作为确保演示稳定，保留模拟回退。
-- 应用底部主导航为 Help、Map、Support、DAO。
-- Map 页面通过紫黄颜色分级和上报数量展示地图预警。
-- Support 页面提供附近匿名求助的支援者流程。
-- DAO 专业认证上传目前为前端 Demo。
-- MagicBlock 私密 DAO 审核室已使用 MagicBlock SDK 完成 TEE RPC 验证与 Phantom 授权 token 创建。完整私密账户 delegation 仍需要后续升级 Anchor/MagicBlock 程序。
-- 自定义 Solana Devnet 程序已上线，但当前前端的用户触发式存证流程仍使用 Memo anchoring / 模拟回退。下一步是把前端检查点指令直接接入已部署程序。
-- 私密证据密钥由用户保存；正式版本中若遗失密钥，可能无法恢复加密证据。
+- 所有加密货币依赖已完全移除，无 Phantom、无 Solana、无任何钱包提示。
+- SMS SOS 流程需要移动设备；桌面端会打开系统默认短信或邮件客户端。
+- 紧急联系人仅存储在设备本地（localStorage），电话号码不传输至任何服务器。
+- 存证加密密钥由用户自持；正式版本中若遗失密钥，加密证据将无法恢复。
+- NGO 目录在 Supabase 不可达时回退至 5 条硬编码演示数据。
+- 未设置 `VITE_CHAINMAKER_API_KEY` 时，长安链锚定以确定性模拟运行。
 
 ---
 
