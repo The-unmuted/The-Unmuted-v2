@@ -35,8 +35,8 @@ _Last updated: 2026-07-09_
 **Phase 4 — Honest cleanup + safety hardening**
 - [x] Retire ChainMaker/Arweave simulated anchoring from UI copy — done 2026-07-08 (Phase 4a: HowItWorks rewritten, 测试链（旧版） badge, donation copy, dead SOSHistory deleted)
 - [x] Remove P2P chat feature code — done 2026-07-09 (Phase 4b: SOSPage dead wizard/chat branches + CommunityPage/MapPage/useP2PChat/useGeoAlert/p2pChat/supportNetwork deleted; `gun` uninstalled; SOS button path untouched)
-- [ ] Evidence deletion cooling-off: 72h soft delete with undo (anti-coercion) ← **next (4c)**
-- [ ] Login flow error messaging + feedback widget UX polish (4d)
+- [x] Evidence deletion cooling-off: 72h soft delete, hidden password-gated recovery (anti-coercion, D-022) — done 2026-07-09 (Phase 4c; browser E2E passed)
+- [ ] Login flow error messaging + feedback widget UX polish ← **next (4d)** — 密码错误 toast easy to miss (validated twice 2026-07-09); unlock errors should distinguish wrong password vs expired login; consider trimming copy-pasted whitespace in password inputs
 
 **Gated on company entity (unchanged order):** TSA API access → anchor new + backfill old hashes; Tencent Cloud migration (D-016); phone OTP (D-012)
 

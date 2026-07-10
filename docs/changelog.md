@@ -1,5 +1,17 @@
 # Changelog — The Unmuted (非默)
 
+## 2026-07-09 — Phase 4c: 72h delete cooling-off with hidden recovery (D-022)
+
+### Added (anti-coercion design — deletion must LOOK final; see D-022)
+- **Delete on cloud records**: small trash icon on each 云端保险柜 card → inline two-tap confirm（确定删除/取消, no browser dialog）→ record vanishes; the only feedback is a 「已删除。」 toast. No recovery/回收站/时限 wording anywhere on the delete path.
+- **Soft delete**: `deleteEvidence` sets `evidence_records.deleted_at` (column existed since migration 0001), removes the local index entry + cached blob; pending (never-uploaded) records are removed outright.
+- **Hidden recovery entry**: inconspicuous grey line 「找回误删的记录」 at the very bottom of the records list → `最近删除` view gated by a **fresh vault-password check** (`unlockWithPassword`) even in an unlocked session.
+- **`最近删除` view**: deleted records with 「约 N 天/小时后彻底清除」 countdown + one-tap 恢复 (`restoreEvidence` nulls `deleted_at`); empty state explains ≥3-day purges are unrecoverable.
+- **Client-triggered purge**: `purgeExpiredEvidence` (72h, `DELETE_RETENTION_MS`) runs on records-view open and before listing deleted records — removes the storage object then the row.
+
+### Verified (browser E2E on production preview, 2026-07-09)
+- Delete → only 「已删除。」, no recovery hints; DB `deleted_at` set, sibling record untouched → grey line → password gate enforced → deleted record listed with countdown → 恢复 → record back in list, `deleted_at` cleared. tsc + eslint clean, 23/23 tests, build OK.
+
 ## 2026-07-09 — Phase 4b: P2P chat (Gun.js) code fully removed
 
 ### Removed (user-confirmed scope; all files verified to have zero live importers before deletion)

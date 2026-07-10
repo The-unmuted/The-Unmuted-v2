@@ -294,3 +294,19 @@ Per-file keys (random per evidence file) ──encrypt──▶ evidence blobs
 - DV-specific instruments (告诫书, 反家暴法) stay, but labelled as applying 属于家庭暴力的.
 
 **Applied 2026-07-08:** 举证说明.html 场景指引 restructured; LegalTipsDisclosure first tip broadened.
+
+---
+
+## D-022 — 72h 删除冷静期，且"可恢复"这一事实必须对旁观者不可见（防胁迫删除）(2026-07-09)
+
+**Decision (user directive):** Evidence deletion is a 72-hour soft delete, but the delete path must **look final**. No 回收站 / "3 天内可恢复" wording anywhere on the delete flow — success shows only 「已删除。」. Recovery lives behind an inconspicuous grey line at the very bottom of the records list（「找回误删的记录」）which requires **re-entering the vault password** before anything is shown.
+
+**Why the stealth requirement (user's words):** 施暴者可能胁迫她当面删除证据。如果界面透露"还能恢复"，施暴者发现后可能引发二次施暴。So the coerced "delete" must convincingly look permanent to an onlooker, while the owner can quietly restore within 72h.
+
+**Mechanics:**
+- `evidence_records.deleted_at` (already in migration 0001) marks the soft delete; `listEvidence` filters it out; local index entry + cached blob are removed immediately so nothing shows on-device.
+- Purge is client-triggered: `purgeExpiredEvidence` runs on records-view open and before listing deleted records; removes storage object + row once `deleted_at` is ≥72h old. No server cron (no entity yet) — worst case a record lingers in ciphertext until the next visit, which is acceptable.
+- Recovery view (`最近删除`) requires a fresh `unlockWithPassword` even in an unlocked session, lists deleted records with 「约 N 天/小时后彻底清除」, one-tap 恢复 (`deleted_at = null`).
+- Pending (never-uploaded) records are still deleted outright — there is no cloud copy to recover.
+
+**Trade-off accepted:** a survivor who genuinely wants data gone immediately cannot force-purge from the UI; 72h is the anti-coercion price. The password gate means an abuser who saw the grey line but doesn't know the vault password still cannot confirm anything was ever deleted.

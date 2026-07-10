@@ -337,7 +337,96 @@ export async function openEvidenceFile(
   return decryptFile(blob, key, iv, record.meta.mimeType);
 }
 
-/** Soft delete (72h cooling-off happens server-side later; UI hides it now) */
+// ── 72h delete cooling-off (anti-coercion, D-022) ─────────────────────────────
+// Deletion must LOOK final in the UI: a coerced deletion shows "已删除" and the
+// record vanishes. Recovery lives behind an inconspicuous entry + password
+// re-verification. Never surface recovery copy on the delete path itself.
+
+export const DELETE_RETENTION_MS = 72 * 60 * 60 * 1000;
+
+export interface DeletedEvidenceRecord extends EvidenceRecord {
+  deletedAt: string;
+}
+
+/** Permanently remove records whose 72h cooling-off has expired. Best-effort. */
+export async function purgeExpiredEvidence(userId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase
+      .from("evidence_records")
+      .select("tx_id, deleted_at")
+      .not("deleted_at", "is", null);
+    if (error || !data) return;
+    const expired = data.filter(
+      (r) => Date.now() - new Date(r.deleted_at as string).getTime() >= DELETE_RETENTION_MS
+    );
+    if (expired.length === 0) return;
+    const txIds = expired.map((r) => r.tx_id as string);
+    await supabase.storage.from(BUCKET).remove(txIds.map((t) => storagePath(userId, t)));
+    await supabase.from("evidence_records").delete().in("tx_id", txIds);
+  } catch {
+    // purge retries on the next records view open
+  }
+}
+
+/** Records still inside the 72h window, oldest deletion last. */
+export async function listDeletedEvidence(userId: string): Promise<DeletedEvidenceRecord[]> {
+  const masterKey = getSessionMasterKey();
+  if (!masterKey) throw new Error("vault-locked");
+  if (!supabase) return [];
+
+  await purgeExpiredEvidence(userId);
+
+  const { data, error } = await supabase
+    .from("evidence_records")
+    .select(
+      "tx_id, wrapped_file_key, encrypted_meta, original_hash, encrypted_hash, capture_grade, client_time, created_at, deleted_at"
+    )
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  if (error || !data) return [];
+
+  const out = await Promise.all(
+    data.map(async (r): Promise<DeletedEvidenceRecord | null> => {
+      try {
+        const encryptedMeta = r.encrypted_meta as string;
+        return {
+          txId: r.tx_id as string,
+          wrappedFileKey: r.wrapped_file_key as string,
+          encryptedMeta,
+          originalHash: r.original_hash as string,
+          encryptedHash: r.encrypted_hash as string,
+          captureGrade: (r.capture_grade as 1 | 2) ?? 2,
+          clientTime: r.client_time as string,
+          serverTime: r.created_at as string,
+          deletedAt: r.deleted_at as string,
+          meta: await openJson<EvidenceMeta>(masterKey, encryptedMeta),
+          syncStatus: "synced",
+        };
+      } catch {
+        return null;
+      }
+    })
+  );
+  return out.filter((r): r is DeletedEvidenceRecord => r !== null);
+}
+
+/** Undo a soft delete within the 72h window. */
+export async function restoreEvidence(txId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from("evidence_records")
+    .update({ deleted_at: null })
+    .eq("tx_id", txId);
+  return !error;
+}
+
+/**
+ * Soft delete: the record disappears from every list immediately, but the
+ * ciphertext stays in the cloud for 72h (see purgeExpiredEvidence).
+ * Pending (never-uploaded) records are removed outright — there is no cloud
+ * copy to recover.
+ */
 export async function deleteEvidence(userId: string, record: EvidenceRecord): Promise<void> {
   if (record.syncStatus === "pending") {
     writeList(

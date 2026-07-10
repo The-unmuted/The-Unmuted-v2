@@ -5,6 +5,7 @@ import {
   ArrowLeft, Clock, Download, ExternalLink, ShieldCheck, Copy, ChevronDown,
   ClipboardList, HeartPulse, MapPin, ShieldAlert,
   Lock, ChevronRight, Eye, EyeOff, Archive, Share2, AlertTriangle, Scale,
+  Trash2, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEvidenceVault } from "@/hooks/useEvidenceVault";
@@ -14,7 +15,13 @@ import { AppLanguage, copyFor } from "@/lib/locale";
 import { hasReportNotes, saveEncryptedReportNotes, type EncryptedReportNoteRecord } from "@/lib/reportNotesVault";
 import { hasPassword, verifyPassword } from "@/lib/userCredentials";
 import { unlockWithPassword } from "@/lib/keyVaultService";
-import type { EvidenceRecord } from "@/lib/evidenceVaultService";
+import {
+  listDeletedEvidence,
+  restoreEvidence,
+  DELETE_RETENTION_MS,
+  type EvidenceRecord,
+  type DeletedEvidenceRecord,
+} from "@/lib/evidenceVaultService";
 import { buildCourtPackage, courtPackageName } from "@/lib/evidenceExport";
 import {
   gradeForFile,
@@ -641,6 +648,7 @@ export default function EvidencePage({
 
   // Records unlock state
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const [unlockPwd, setUnlockPwd] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [unlockError, setUnlockError] = useState(false);
@@ -1135,6 +1143,13 @@ export default function EvidencePage({
             </div>
           )}
         </div>
+      ) : showRecovery && vault.userId ? (
+        <DeletedRecordsRecovery
+          userId={vault.userId}
+          language={language}
+          onBack={() => setShowRecovery(false)}
+          onRestored={() => void vault.refreshHistory()}
+        />
       ) : (
         <>
           {vault.history.length === 0 && vault.legacyHistory.length === 0 ? (
@@ -1150,6 +1165,7 @@ export default function EvidencePage({
                 <CloudVaultHistory
                   records={vault.history}
                   onOpen={vault.openFile}
+                  onDelete={vault.deleteRecord}
                   language={language}
                 />
               )}
@@ -1157,6 +1173,15 @@ export default function EvidencePage({
                 <LegacyVaultHistory records={vault.legacyHistory} language={language} />
               )}
             </>
+          )}
+          {/* D-022: deliberately low-key — the delete path never hints that this exists */}
+          {vault.canUseVault && (
+            <button
+              onClick={() => setShowRecovery(true)}
+              className="mx-auto block pt-1 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              {copyFor(language, "Recover a mistakenly deleted record", "找回误删的记录")}
+            </button>
           )}
         </>
       )}
@@ -1530,14 +1555,31 @@ function LegalTipsDisclosure({
 function CloudVaultHistory({
   records,
   onOpen,
+  onDelete,
   language,
 }: {
   records: EvidenceRecord[];
   onOpen: (record: EvidenceRecord) => Promise<Blob | null>;
+  onDelete: (record: EvidenceRecord) => Promise<boolean>;
   language: AppLanguage;
 }) {
   const [openingTx, setOpeningTx] = useState<string | null>(null);
   const [exportingTx, setExportingTx] = useState<string | null>(null);
+  const [confirmTx, setConfirmTx] = useState<string | null>(null);
+  const [deletingTx, setDeletingTx] = useState<string | null>(null);
+
+  // D-022: deletion must look final — success copy never mentions recovery.
+  const handleDelete = async (record: EvidenceRecord) => {
+    setDeletingTx(record.txId);
+    const ok = await onDelete(record);
+    setDeletingTx(null);
+    setConfirmTx(null);
+    if (ok) {
+      toast.success(copyFor(language, "Record deleted.", "已删除。"));
+    } else {
+      toast.error(copyFor(language, "Could not delete right now.", "暂时无法删除，请稍后再试。"));
+    }
+  };
 
   const handleExport = async (record: EvidenceRecord) => {
     setExportingTx(record.txId);
@@ -1627,33 +1669,222 @@ function CloudVaultHistory({
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <Clock className="h-3 w-3 shrink-0" />
             <span>{new Date(r.clientTime).toLocaleString(language === "zh" ? "zh-CN" : "en-US")}</span>
-            <button
-              onClick={() => handleExport(r)}
-              disabled={exportingTx === r.txId || openingTx === r.txId}
-              className="ml-auto flex items-center gap-1 text-primary disabled:opacity-60"
-            >
-              {exportingTx === r.txId ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Scale className="h-3 w-3" />
-              )}
-              {copyFor(language, "Court package", "导出举证包")}
-            </button>
-            <button
-              onClick={() => handleOpen(r)}
-              disabled={openingTx === r.txId || exportingTx === r.txId}
-              className="flex items-center gap-1 text-primary disabled:opacity-60"
-            >
-              {openingTx === r.txId ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Download className="h-3 w-3" />
-              )}
-              {copyFor(language, "Unlock & save", "解锁查看")}
-            </button>
+            {confirmTx === r.txId ? (
+              <>
+                <button
+                  onClick={() => handleDelete(r)}
+                  disabled={deletingTx === r.txId}
+                  className="ml-auto flex items-center gap-1 font-bold text-destructive disabled:opacity-60"
+                >
+                  {deletingTx === r.txId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  {copyFor(language, "Confirm delete", "确定删除")}
+                </button>
+                <button
+                  onClick={() => setConfirmTx(null)}
+                  disabled={deletingTx === r.txId}
+                  className="text-muted-foreground disabled:opacity-60"
+                >
+                  {copyFor(language, "Cancel", "取消")}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleExport(r)}
+                  disabled={exportingTx === r.txId || openingTx === r.txId}
+                  className="ml-auto flex items-center gap-1 text-primary disabled:opacity-60"
+                >
+                  {exportingTx === r.txId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Scale className="h-3 w-3" />
+                  )}
+                  {copyFor(language, "Court package", "导出举证包")}
+                </button>
+                <button
+                  onClick={() => handleOpen(r)}
+                  disabled={openingTx === r.txId || exportingTx === r.txId}
+                  className="flex items-center gap-1 text-primary disabled:opacity-60"
+                >
+                  {openingTx === r.txId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Download className="h-3 w-3" />
+                  )}
+                  {copyFor(language, "Unlock & save", "解锁查看")}
+                </button>
+                <button
+                  onClick={() => setConfirmTx(r.txId)}
+                  disabled={openingTx === r.txId || exportingTx === r.txId}
+                  aria-label={copyFor(language, "Delete", "删除")}
+                  className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// D-022: hidden recovery view. Reached only via the low-key entry line and a
+// fresh password check, so a coerced "delete" stays invisible to an onlooker
+// while the owner can quietly restore within 72h.
+function DeletedRecordsRecovery({
+  userId,
+  language,
+  onBack,
+  onRestored,
+}: {
+  userId: string;
+  language: AppLanguage;
+  onBack: () => void;
+  onRestored: () => void;
+}) {
+  const [pwd, setPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [pwdError, setPwdError] = useState(false);
+  const [records, setRecords] = useState<DeletedEvidenceRecord[] | null>(null);
+  const [restoringTx, setRestoringTx] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    setChecking(true);
+    setPwdError(false);
+    const ok = (await unlockWithPassword(userId, pwd)) !== null;
+    if (ok) {
+      setRecords(await listDeletedEvidence(userId).catch(() => []));
+    } else {
+      setPwdError(true);
+    }
+    setChecking(false);
+  };
+
+  const handleRestore = async (rec: DeletedEvidenceRecord) => {
+    setRestoringTx(rec.txId);
+    const ok = await restoreEvidence(rec.txId);
+    setRestoringTx(null);
+    if (ok) {
+      setRecords((prev) => (prev ?? []).filter((r) => r.txId !== rec.txId));
+      onRestored();
+      toast.success(copyFor(language, "Restored to your records.", "已恢复到存证记录。"));
+    } else {
+      toast.error(copyFor(language, "Could not restore right now.", "暂时无法恢复，请稍后再试。"));
+    }
+  };
+
+  const remainingLabel = (deletedAt: string) => {
+    const msLeft = DELETE_RETENTION_MS - (Date.now() - new Date(deletedAt).getTime());
+    const hours = Math.max(1, Math.ceil(msLeft / 3_600_000));
+    if (hours >= 24) {
+      const days = Math.ceil(hours / 24);
+      return copyFor(language, `Erased for good in about ${days} day${days > 1 ? "s" : ""}`, `约 ${days} 天后彻底清除`);
+    }
+    return copyFor(language, `Erased for good in about ${hours} hour${hours > 1 ? "s" : ""}`, `约 ${hours} 小时后彻底清除`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <h3 className="text-sm font-bold text-foreground">
+          {copyFor(language, "Recently deleted", "最近删除")}
+        </h3>
+      </div>
+
+      {records === null ? (
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+          <p className="text-xs leading-5 text-muted-foreground">
+            {copyFor(
+              language,
+              "Enter your password again to see records deleted in the last 3 days.",
+              "再次输入密码，查看最近 3 天内删除的记录。"
+            )}
+          </p>
+          <div className="relative">
+            <input
+              value={pwd}
+              onChange={(e) => setPwd(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && pwd && !checking && handleVerify()}
+              type={showPwd ? "text" : "password"}
+              placeholder={copyFor(language, "Password", "密码")}
+              className="w-full rounded-2xl border border-border bg-background px-4 py-3 pr-11 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+            />
+            <button
+              onClick={() => setShowPwd((s) => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            >
+              {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {pwdError && (
+            <p className="text-xs text-destructive">
+              {copyFor(language, "Incorrect password.", "密码错误。")}
+            </p>
+          )}
+          <button
+            onClick={handleVerify}
+            disabled={!pwd || checking}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+          >
+            {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+            {copyFor(language, "Verify", "确认")}
+          </button>
+        </div>
+      ) : records.length === 0 ? (
+        <div className="rounded-2xl border border-border/60 bg-card/50 p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            {copyFor(language, "Nothing to recover.", "没有可找回的记录。")}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground/70">
+            {copyFor(
+              language,
+              "Records deleted more than 3 days ago are erased for good.",
+              "删除超过 3 天的记录已彻底清除，无法找回。"
+            )}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {records.map((r) => (
+            <div key={r.txId} className="rounded-xl border border-border bg-card p-3 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">{getMimeIcon(r.meta.mimeType)}</span>
+                <span className="text-xs font-medium text-foreground">
+                  {getMimeLabel(r.meta.mimeType, language)} · {formatBytes(r.meta.originalSize)}
+                </span>
+                <span className="ml-auto" />
+                <GradeBadge grade={r.captureGrade} language={language} />
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <Clock className="h-3 w-3 shrink-0" />
+                <span>{remainingLabel(r.deletedAt)}</span>
+                <button
+                  onClick={() => handleRestore(r)}
+                  disabled={restoringTx === r.txId}
+                  className="ml-auto flex items-center gap-1 text-primary disabled:opacity-60"
+                >
+                  {restoringTx === r.txId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <RotateCcw className="h-3 w-3" />
+                  )}
+                  {copyFor(language, "Restore", "恢复")}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

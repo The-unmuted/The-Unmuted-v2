@@ -18,8 +18,8 @@ Live: https://the-unmuted.vercel.app/
 
 ## Current State
 
-**Active branch:** `feature/feedback-login` (production-track Phase 1+2+3 work, uncommitted as of 2026-07-08; commit pending user confirmation)
-**Status:** **Phases 1, 2, 3 and 4a+4b are complete (4b: 2026-07-09)**; Phases 1–3 browser-verified on a clean production build. Phase 1+2: OTP login (6-digit) → cloud key-vault password unlock → capture → encrypt → private-bucket save (现场取证 badge, 已进保险柜) → password re-verify → decrypt/export with exact SHA-256 match against the sealed original hash. Phase 3 (D-020): 导出举证包 button → plain ZIP (decrypted original + self-contained bilingual 举证说明.html with hashes, certutil/shasum verification instructions, 3 scenario guides) — extracted-file hash verified against both the HTML-stated fingerprint and the record. Phase 4a (honest copy) and 4b (P2P chat/Gun.js removal, 2026-07-09) done; 4c (72h delete cooling-off) and 4d (login/feedback polish) remain. Test suite: 23/23 vitest, tsc + eslint clean.
+**Active branch:** `main` (Phase 1-3 + 4a/4b committed & deployed 2026-07-09 as 2b74749; Phase 4c changes uncommitted)
+**Status:** **Phases 1, 2, 3 and 4a+4b+4c are complete (4b/4c: 2026-07-09)**; Phases 1–3 browser-verified on a clean production build. Phase 1+2: OTP login (6-digit) → cloud key-vault password unlock → capture → encrypt → private-bucket save (现场取证 badge, 已进保险柜) → password re-verify → decrypt/export with exact SHA-256 match against the sealed original hash. Phase 3 (D-020): 导出举证包 button → plain ZIP (decrypted original + self-contained bilingual 举证说明.html with hashes, certutil/shasum verification instructions, 3 scenario guides) — extracted-file hash verified against both the HTML-stated fingerprint and the record. Phase 4a (honest copy), 4b (P2P chat/Gun.js removal, 2026-07-09) and 4c (72h delete cooling-off with hidden password-gated recovery, D-022, browser-E2E-verified 2026-07-09) done; only 4d (login error messaging + feedback polish) remains. Test suite: 23/23 vitest, tsc + eslint clean.
 
 **Deployments (both live, still running pre-Phase-1 build):**
 - Vercel (overseas): https://the-unmuted.vercel.app/

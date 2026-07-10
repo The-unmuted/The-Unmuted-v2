@@ -16,6 +16,8 @@ import {
   listEvidence,
   openEvidenceFile,
   syncPendingEvidence,
+  deleteEvidence,
+  purgeExpiredEvidence,
   type EvidenceRecord,
   type SaveEvidenceOptions,
 } from '@/lib/evidenceVaultService';
@@ -53,6 +55,7 @@ export function useEvidenceVault(language: AppLanguage = 'en') {
 
   const refreshHistory = useCallback(async () => {
     if (!userId || !getSessionMasterKey()) return;
+    void purgeExpiredEvidence(userId);
     try {
       setHistory(await listEvidence(userId));
     } catch {
@@ -128,6 +131,21 @@ export function useEvidenceVault(language: AppLanguage = 'en') {
     [userId]
   );
 
+  /** Soft delete — record vanishes from the list; no recovery hints here (D-022) */
+  const deleteRecord = useCallback(
+    async (record: EvidenceRecord): Promise<boolean> => {
+      if (!userId) return false;
+      try {
+        await deleteEvidence(userId, record);
+        setHistory((prev) => prev.filter((r) => r.txId !== record.txId));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [userId]
+  );
+
   /** Retry pending uploads; refresh statuses afterwards */
   const syncNow = useCallback(async () => {
     if (!userId) return;
@@ -153,6 +171,7 @@ export function useEvidenceVault(language: AppLanguage = 'en') {
     canUseVault,
     processFile,
     openFile,
+    deleteRecord,
     refreshHistory,
     syncNow,
     reset,
