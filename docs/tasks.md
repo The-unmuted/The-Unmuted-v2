@@ -51,6 +51,8 @@ _Last updated: 2026-07-10_
 - [x] ~~Password reset flow~~ — solved 2026-07-06: email OTP resets account access, paper recovery code resets data access (D-017/D-018)
 
 ### Core UX
+- [ ] **Biometric unlock (Face ID / fingerprint)** — replace daily password entry with platform biometrics (WebAuthn/passkey + PRF wrapping the master key); password remains the fallback + new-device path. Requested by Katie 2026-07-10 after friction feedback.
+- [ ] **Emergency SOS entry on the unlock screen** — SOS needs no account/password (contacts are localStorage); proposal: restrained entry on the password screen, no contact details shown pre-auth. Trade-off: weakens the login wall's disguise effect. **Awaiting Katie's decision.**
 - [x] ~~Evidence key recovery~~ — solved 2026-07-06 by D-017 key hierarchy (no more per-file key bundles to lose)
 - [ ] **Offline-first mode** — evidence upload queue done (2026-07-06); SOS broadcast path still not wired to `useOfflineBuffer`
 - [x] ~~Map page resurface~~ — resolved 2026-07-09: `MapPage.tsx` deleted (Phase 4b); the 预警地图 concept is retired
@@ -85,6 +87,7 @@ _Last updated: 2026-07-10_
 
 ## Done (Recent)
 
+- [x] SOS hold 5s → real 2s; 修改密码 in settings; donation widget + display-name setting removed (2026-07-10, Katie's UX feedback)
 - [x] China-reachable deployment live on CloudBase default domain (2026-07-02)
 - [x] Unify diverged repos (The-Unmuted-demo + The-Unmuted-v2) onto single main lineage (2026-07-02)
 - [x] Fix CloudBase CI: Node 24 lockfile compatibility (2026-07-02)

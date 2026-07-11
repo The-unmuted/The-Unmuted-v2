@@ -1,5 +1,15 @@
 # Changelog — The Unmuted (非默)
 
+## 2026-07-10 — UX batch: 2s SOS hold, in-app password change, header/settings cleanup
+
+### Changed (Katie's requests after production use)
+- **SOS hold time 5s → real 2s** (`SOSButton.tsx`): HOLD_DURATION 2000ms, countdown from 2, copy 长按 2 秒发送短信求救. Trade-off accepted: shorter GPS pre-warm window (cold-fix fallback unchanged) and slightly higher accidental-trigger risk — in an emergency, seconds beat both. No in-app confirm was ever present after the hold; the remaining "确认" is the OS-level open-Messages prompt + manual send, which a web app cannot bypass.
+- **修改密码 in Settings** (`SettingsWidget.tsx`): verifies the current password (`unlockWithPassword`, distinguished inline errors) then re-wraps via `changePassword`; paper recovery key explicitly stated to keep working. Cloud accounts only.
+
+### Removed
+- **DonationWidget** (header heart icon) — deleted at Katie's request.
+- **Display-name setting** — remnant of the removed social/chat features; nobody else can see a name now. `getUsername`/`saveUsername`/`getLocalUsername` deleted from `userCredentials.ts` (no remaining callers).
+
 ## 2026-07-10 — Phase 4d: login/unlock inline error messaging + whitespace tolerance
 
 ### Changed

@@ -8,7 +8,6 @@ import PsychPage from "@/components/PsychPage";
 import LegalPage from "@/components/LegalPage";
 import { useLocale, copyFor } from "@/lib/locale";
 import FeedbackWidget from "@/components/FeedbackWidget";
-import DonationWidget from "@/components/DonationWidget";
 import SettingsWidget from "@/components/SettingsWidget";
 import LoginFlow from "@/components/LoginFlow";
 import { signOut } from "@/lib/authService";
@@ -64,14 +63,9 @@ export default function Index() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <DonationWidget language={language} />
           <FeedbackWidget language={language} />
           {isSignedIn && (
-            <SettingsWidget
-              language={language}
-              email={pendingEmail}
-              onLogout={handleLogout}
-            />
+            <SettingsWidget language={language} onLogout={handleLogout} />
           )}
           <button
             onClick={() => setLanguage(language === "en" ? "zh" : "en")}

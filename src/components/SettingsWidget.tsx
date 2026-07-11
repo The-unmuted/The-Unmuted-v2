@@ -1,31 +1,59 @@
 import { useState, useEffect } from "react";
-import { Settings, X, LogOut, User, Check, Loader2 } from "lucide-react";
+import { Settings, X, LogOut, Loader2, KeyRound } from "lucide-react";
 import { copyFor } from "@/lib/locale";
-import { getLocalUsername, saveUsername } from "@/lib/userCredentials";
+import { getCurrentUser } from "@/lib/authService";
+import { unlockWithPassword, changePassword } from "@/lib/keyVaultService";
 
 interface SettingsWidgetProps {
   language: "en" | "zh";
-  email: string;
   onLogout: () => void;
 }
 
-export default function SettingsWidget({ language, email, onLogout }: SettingsWidgetProps) {
+export default function SettingsWidget({ language, onLogout }: SettingsWidgetProps) {
   const [open, setOpen] = useState(false);
-  const [username, setUsername] = useState(() => getLocalUsername());
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [pwdBusy, setPwdBusy] = useState(false);
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdDone, setPwdDone] = useState(false);
 
   useEffect(() => {
-    setUsername(getLocalUsername());
+    setCurrentPwd("");
+    setNewPwd("");
+    setPwdError(null);
+    setPwdDone(false);
+    if (open) void getCurrentUser().then((u) => setUserId(u?.id ?? ""));
   }, [open]);
 
-  const handleSaveUsername = async () => {
-    if (!username.trim()) return;
-    setSaving(true);
-    await saveUsername(email, username.trim());
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1800);
+  const handleChangePassword = async () => {
+    const trimmedNew = newPwd.trim();
+    setPwdError(null);
+    setPwdDone(false);
+    if (trimmedNew.length < 8) {
+      setPwdError(copyFor(language, "New password needs at least 8 characters.", "新密码至少需要 8 个字符。"));
+      return;
+    }
+    setPwdBusy(true);
+    const res = await unlockWithPassword(userId, currentPwd);
+    if (!res.ok) {
+      setPwdBusy(false);
+      setPwdError(
+        res.reason === "vault-unavailable"
+          ? copyFor(language, "Couldn't open your vault right now. Check your connection and try again.", "暂时打不开你的保险柜。请检查网络后再试。")
+          : copyFor(language, "Current password is incorrect.", "当前密码不正确。")
+      );
+      return;
+    }
+    const ok = await changePassword(userId, trimmedNew);
+    setPwdBusy(false);
+    if (!ok) {
+      setPwdError(copyFor(language, "Could not update the password. Try again.", "密码修改失败，请稍后再试。"));
+      return;
+    }
+    setCurrentPwd("");
+    setNewPwd("");
+    setPwdDone(true);
   };
 
   return (
@@ -60,34 +88,57 @@ export default function SettingsWidget({ language, email, onLogout }: SettingsWi
             </button>
           </div>
 
-          {/* Username */}
-          <div className="mb-4">
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
-              <User className="h-3.5 w-3.5" />
-              {copyFor(language, "Display name", "显示名称")}
-            </label>
-            <div className="flex gap-2">
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder={copyFor(language, "Your name (visible to others)", "你的名字（他人可见）")}
-                className="flex-1 rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
-              />
-              <button
-                onClick={handleSaveUsername}
-                disabled={!username.trim() || saving}
-                className="flex items-center justify-center rounded-2xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : saved ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  copyFor(language, "Save", "保存")
-                )}
-              </button>
-            </div>
-          </div>
+          {/* Change vault password (cloud accounts only) */}
+          {userId && (
+            <>
+              <div className="mb-1">
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                  <KeyRound className="h-3.5 w-3.5" />
+                  {copyFor(language, "Change password", "修改密码")}
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="password"
+                    value={currentPwd}
+                    onChange={(e) => setCurrentPwd(e.target.value)}
+                    placeholder={copyFor(language, "Current password", "当前密码")}
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                  />
+                  <input
+                    type="password"
+                    value={newPwd}
+                    onChange={(e) => setNewPwd(e.target.value)}
+                    placeholder={copyFor(language, "New password (at least 8 characters)", "新密码（至少 8 个字符）")}
+                    className="w-full rounded-2xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                  />
+                  {pwdError && <p className="text-xs leading-5 text-destructive">{pwdError}</p>}
+                  {pwdDone && (
+                    <p className="text-xs leading-5 text-primary">
+                      {copyFor(language, "Password updated. Use the new one from now on.", "密码已修改，下次解锁请用新密码。")}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleChangePassword}
+                    disabled={!currentPwd || newPwd.trim().length < 8 || pwdBusy}
+                    className="flex w-full items-center justify-center rounded-2xl bg-primary py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                  >
+                    {pwdBusy ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      copyFor(language, "Update password", "确认修改")
+                    )}
+                  </button>
+                  <p className="text-[11px] leading-4 text-muted-foreground">
+                    {copyFor(
+                      language,
+                      "Your paper recovery key keeps working after the change.",
+                      "修改后，你纸上的恢复钥匙仍然有效。"
+                    )}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Divider */}
           <div className="my-4 h-px bg-border" />

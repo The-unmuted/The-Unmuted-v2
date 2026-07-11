@@ -37,7 +37,7 @@ export default function SOSButton({
 }: SOSButtonProps) {
   const [state, setState] = useState<SOSState>("idle");
   const [progress, setProgress] = useState(0);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(2);
   const [showSafeButton, setShowSafeButton] = useState(false);
   const [extraContacts, setExtraContacts] = useState<EmergencyContact[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
@@ -47,12 +47,12 @@ export default function SOSButton({
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const startTimeRef = useRef<number>(0);
   // GPS pre-warm: start watchPosition at press-start so hardware GPS has
-  // 5 seconds to lock on before we actually need the coordinates.
+  // the hold period to lock on before we actually need the coordinates.
   const gpsWatchRef = useRef<number | null>(null);
   const latestPositionRef = useRef<GeolocationPosition | null>(null);
   const { contacts } = useEmergencyContacts();
 
-  const HOLD_DURATION = 5000;
+  const HOLD_DURATION = 2000;
 
   const triggerSOS = useCallback(async () => {
     setState("triggered");
@@ -79,7 +79,7 @@ export default function SOSButton({
       gpsWatchRef.current = null;
     }
 
-    // Use the pre-warmed position if fresh (acquired during the 5-second hold)
+    // Use the pre-warmed position if fresh (acquired during the hold)
     const prewarmed = latestPositionRef.current;
     latestPositionRef.current = null;
 
@@ -93,7 +93,7 @@ export default function SOSButton({
       lng = prewarmed.coords.longitude;
       accuracy = prewarmed.coords.accuracy ?? undefined;
     } else {
-      // Fallback: cold request with a shorter timeout (user already waited 5s)
+      // Fallback: cold request with a shorter timeout (user already waited out the hold)
       const [posResult] = await Promise.allSettled([
         new Promise<GeolocationPosition>((resolve, reject) =>
           navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -184,13 +184,13 @@ export default function SOSButton({
     if (state === "triggered" || state === "success") return;
     setState("pressing");
     setProgress(0);
-    setCountdown(5);
+    setCountdown(2);
     startTimeRef.current = Date.now();
 
     // ── GPS pre-warm ──────────────────────────────────────────────────────────
-    // Start watchPosition immediately so the GPS hardware has the full 5-second
-    // hold period to lock on. By trigger time we'll have a much more accurate
-    // fix than a cold getCurrentPosition call would give.
+    // Start watchPosition immediately so the GPS hardware has the full hold
+    // period to lock on. By trigger time we'll have a more accurate fix than
+    // a cold getCurrentPosition call would give.
     if (navigator.geolocation && gpsWatchRef.current === null) {
       gpsWatchRef.current = navigator.geolocation.watchPosition(
         (pos) => {
@@ -209,7 +209,7 @@ export default function SOSButton({
       const elapsed = Date.now() - startTimeRef.current;
       const pct = Math.min(elapsed / HOLD_DURATION, 1);
       setProgress(pct);
-      setCountdown(Math.max(0, 5 - Math.floor(elapsed / 1000)));
+      setCountdown(Math.max(0, 2 - Math.floor(elapsed / 1000)));
 
       if (pct >= 1) {
         clearInterval(intervalRef.current);
@@ -229,7 +229,7 @@ export default function SOSButton({
       }
       setState("idle");
       setProgress(0);
-      setCountdown(5);
+      setCountdown(2);
     }
   }, [state]);
 
@@ -344,7 +344,7 @@ export default function SOSButton({
       )}
 
       <p className="mt-2 text-center text-sm text-muted-foreground">
-        {state === "idle" && copyFor(language, "Hold for 5 seconds to send SMS alert", "长按 5 秒发送短信求救")}
+        {state === "idle" && copyFor(language, "Hold for 2 seconds to send SMS alert", "长按 2 秒发送短信求救")}
         {state === "pressing" && copyFor(language, "Keep holding...", "继续按住...")}
         {state === "triggered" && copyFor(language, "Getting location and opening SMS", "正在获取位置并打开短信")}
         {state === "success" && copyFor(language, "SMS app opened with your location", "短信已附上你的位置")}
