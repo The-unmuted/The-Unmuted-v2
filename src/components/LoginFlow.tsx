@@ -33,6 +33,7 @@ import {
 } from "@/lib/keyVaultService";
 import { normalizeRecoveryCode, isValidRecoveryCodeFormat } from "@/lib/keyVault";
 import { hasPassword, verifyPassword, savePassword } from "@/lib/userCredentials";
+import UnlockSOSEntry from "./UnlockSOSEntry";
 
 const LOGO_SRC = "/the-unmuted-mark.png";
 
@@ -370,6 +371,8 @@ export default function LoginFlow({
           />
         )}
       </div>
+
+      <UnlockSOSEntry language={language} />
     </main>
   );
 }

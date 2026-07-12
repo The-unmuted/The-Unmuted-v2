@@ -1,5 +1,13 @@
 # Changelog — The Unmuted (非默)
 
+## 2026-07-11 — SOS entry on the unlock screen (D-024)
+
+### Added
+- **‼️ SOS entry on the login/unlock wall** (`UnlockSOSEntry.tsx`, mounted in `LoginFlow`): emergency help no longer waits behind OTP + vault password. A bare ‼️ icon (Katie's design call — no 紧急求救 text) sits bottom-right; tap → full-screen overlay with the standard hold-2s SOS button. Only rendered when this device has emergency contacts in localStorage, so a fresh/stranger's device still shows a plain login wall. No contact details pre-auth; `SOSButton` reused byte-identical (validated code untouched).
+
+### Verified
+- tsc, ESLint, 23/23 tests, production build. Browser E2E on preview: no contacts → no icon; contacts present → icon appears; tap → hold-button overlay; X closes; cleanup → icon gone again.
+
 ## 2026-07-10 — UX batch: 2s SOS hold, in-app password change, header/settings cleanup
 
 ### Changed (Katie's requests after production use)

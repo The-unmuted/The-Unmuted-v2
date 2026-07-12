@@ -52,7 +52,7 @@ _Last updated: 2026-07-10_
 
 ### Core UX
 - [ ] **Biometric unlock (Face ID / fingerprint)** — replace daily password entry with platform biometrics (WebAuthn/passkey + PRF wrapping the master key); password remains the fallback + new-device path. Requested by Katie 2026-07-10 after friction feedback.
-- [ ] **Emergency SOS entry on the unlock screen** — SOS needs no account/password (contacts are localStorage); proposal: restrained entry on the password screen, no contact details shown pre-auth. Trade-off: weakens the login wall's disguise effect. **Awaiting Katie's decision.**
+- [x] ~~Emergency SOS entry on the unlock screen~~ — done 2026-07-11 (D-024): ‼️ icon bottom-right of the login wall (Katie chose icon-only over text), contacts-gated rendering, tap → hold-2s SOS overlay; browser-verified.
 - [x] ~~Evidence key recovery~~ — solved 2026-07-06 by D-017 key hierarchy (no more per-file key bundles to lose)
 - [ ] **Offline-first mode** — evidence upload queue done (2026-07-06); SOS broadcast path still not wired to `useOfflineBuffer`
 - [x] ~~Map page resurface~~ — resolved 2026-07-09: `MapPage.tsx` deleted (Phase 4b); the 预警地图 concept is retired

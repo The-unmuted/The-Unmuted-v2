@@ -318,3 +318,17 @@ Per-file keys (random per evidence file) ──encrypt──▶ evidence blobs
 **Why:** 2026-07-09 incident — a pasted password with a leading space failed to unlock and the toast-only error gave no clue. Survivors often paste passwords from notes apps; edge whitespace is invisible and the cost of a false "wrong password" here is a user believing their evidence is lost.
 
 **Trade-off accepted:** passwords that *intentionally* differ only by edge whitespace become equivalent — a negligible loss of password space against PBKDF2-310k, vastly outweighed by the lockout-avoidance benefit. Interior whitespace is untouched.
+
+## D-024 — 解锁页 ‼️ 求救入口（icon-only，仅本机有联系人时显示）(2026-07-11)
+
+**Decision:** The unlock/login screen shows a discreet SOS entry — a bare ‼️ icon in the bottom-right corner, no text. Tapping it opens a full-screen overlay with the standard hold-2s SOS button. Rendered only when this device already has emergency contacts in localStorage.
+
+**Why:** Katie's 2026-07-10 friction feedback — an emergency must not wait behind email OTP + vault password. SOS never needed the account or the vault (contacts + sound settings are localStorage-only), so the login wall was blocking it artificially. The icon-only form is Katie's own call (2026-07-11): 「可以不用写成紧急求救，而是设置成这个‼️图标」.
+
+**Disguise trade-off, and how it's contained:**
+- No text like 紧急求救 on the wall — a bare ‼️ is ambiguous to an onlooker; the owner learns what it is once.
+- Contacts-gated rendering: a fresh/stranger's device shows a plain login wall with nothing extra.
+- Tap opens the hold button, never fires SMS directly — same 2s hold as in-app guards against accidental/pocket triggers.
+- No contact names/numbers are rendered pre-auth.
+
+**Mechanics:** new `UnlockSOSEntry.tsx` mounted in `LoginFlow`; reuses `SOSButton` unmodified (validated code untouched) with `useSilentMode` settings from localStorage.
