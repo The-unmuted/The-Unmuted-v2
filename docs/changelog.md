@@ -1,5 +1,13 @@
 # Changelog — The Unmuted (非默)
 
+## 2026-07-17 — Per-action password re-verification in the Cloud Vault (D-025)
+
+### Changed (Katie's request after using 解锁查看 on her phone)
+- **解锁查看 / 导出举证包 / 删除 now each require a fresh password entry** (`CloudVaultHistory` in `EvidencePage.tsx`): tapping any of the three opens an inline password prompt inside the record card; `unlockWithPassword` verifies before the action runs. Protects against a phone grabbed while the records list is already unlocked. Delete's old two-button confirm is replaced — the password entry itself is the confirmation (destructive-red 确定删除 button). D-022 preserved: deletion still looks final, no recovery hint. Same inline error copy as the page gate (密码错误 vs 保险柜打不开).
+
+### Verified
+- tsc clean, 23/23 tests, production build. Not yet browser-tested — Katie to verify on her phone: each of the three actions should ask for the password every time.
+
 ## 2026-07-11 — SOS entry on the unlock screen (D-024)
 
 ### Added

@@ -1167,9 +1167,10 @@ export default function EvidencePage({
             </div>
           ) : (
             <>
-              {vault.history.length > 0 && (
+              {vault.history.length > 0 && vault.userId && (
                 <CloudVaultHistory
                   records={vault.history}
+                  userId={vault.userId}
                   onOpen={vault.openFile}
                   onDelete={vault.deleteRecord}
                   language={language}
@@ -1558,28 +1559,66 @@ function LegalTipsDisclosure({
   );
 }
 
+type VaultActionKind = "open" | "export" | "delete";
+
 function CloudVaultHistory({
   records,
+  userId,
   onOpen,
   onDelete,
   language,
 }: {
   records: EvidenceRecord[];
+  userId: string;
   onOpen: (record: EvidenceRecord) => Promise<Blob | null>;
   onDelete: (record: EvidenceRecord) => Promise<boolean>;
   language: AppLanguage;
 }) {
   const [openingTx, setOpeningTx] = useState<string | null>(null);
   const [exportingTx, setExportingTx] = useState<string | null>(null);
-  const [confirmTx, setConfirmTx] = useState<string | null>(null);
   const [deletingTx, setDeletingTx] = useState<string | null>(null);
+  // Every decrypt/delete re-asks for the password: an unlocked list on a
+  // grabbed phone must not be enough to read or destroy evidence.
+  const [pendingAction, setPendingAction] = useState<{ txId: string; kind: VaultActionKind } | null>(null);
+  const [pwd, setPwd] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [pwdError, setPwdError] = useState<UnlockFailureReason | null>(null);
+
+  const requestAction = (record: EvidenceRecord, kind: VaultActionKind) => {
+    setPendingAction({ txId: record.txId, kind });
+    setPwd("");
+    setPwdError(null);
+  };
+
+  const cancelAction = () => {
+    setPendingAction(null);
+    setPwd("");
+    setPwdError(null);
+  };
+
+  const handleConfirm = async (record: EvidenceRecord) => {
+    if (!pendingAction || verifying) return;
+    setVerifying(true);
+    setPwdError(null);
+    const res = await unlockWithPassword(userId, pwd);
+    setVerifying(false);
+    if (!res.ok) {
+      setPwdError(res.reason);
+      return;
+    }
+    const kind = pendingAction.kind;
+    cancelAction();
+    if (kind === "open") await handleOpen(record);
+    else if (kind === "export") await handleExport(record);
+    else await handleDelete(record);
+  };
 
   // D-022: deletion must look final — success copy never mentions recovery.
   const handleDelete = async (record: EvidenceRecord) => {
     setDeletingTx(record.txId);
     const ok = await onDelete(record);
     setDeletingTx(null);
-    setConfirmTx(null);
     if (ok) {
       toast.success(copyFor(language, "Record deleted.", "已删除。"));
     } else {
@@ -1675,33 +1714,11 @@ function CloudVaultHistory({
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <Clock className="h-3 w-3 shrink-0" />
             <span>{new Date(r.clientTime).toLocaleString(language === "zh" ? "zh-CN" : "en-US")}</span>
-            {confirmTx === r.txId ? (
+            {pendingAction?.txId !== r.txId && (
               <>
                 <button
-                  onClick={() => handleDelete(r)}
-                  disabled={deletingTx === r.txId}
-                  className="ml-auto flex items-center gap-1 font-bold text-destructive disabled:opacity-60"
-                >
-                  {deletingTx === r.txId ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3 w-3" />
-                  )}
-                  {copyFor(language, "Confirm delete", "确定删除")}
-                </button>
-                <button
-                  onClick={() => setConfirmTx(null)}
-                  disabled={deletingTx === r.txId}
-                  className="text-muted-foreground disabled:opacity-60"
-                >
-                  {copyFor(language, "Cancel", "取消")}
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={() => handleExport(r)}
-                  disabled={exportingTx === r.txId || openingTx === r.txId}
+                  onClick={() => requestAction(r, "export")}
+                  disabled={exportingTx === r.txId || openingTx === r.txId || deletingTx === r.txId}
                   className="ml-auto flex items-center gap-1 text-primary disabled:opacity-60"
                 >
                   {exportingTx === r.txId ? (
@@ -1712,8 +1729,8 @@ function CloudVaultHistory({
                   {copyFor(language, "Court package", "导出举证包")}
                 </button>
                 <button
-                  onClick={() => handleOpen(r)}
-                  disabled={openingTx === r.txId || exportingTx === r.txId}
+                  onClick={() => requestAction(r, "open")}
+                  disabled={openingTx === r.txId || exportingTx === r.txId || deletingTx === r.txId}
                   className="flex items-center gap-1 text-primary disabled:opacity-60"
                 >
                   {openingTx === r.txId ? (
@@ -1724,16 +1741,82 @@ function CloudVaultHistory({
                   {copyFor(language, "Unlock & save", "解锁查看")}
                 </button>
                 <button
-                  onClick={() => setConfirmTx(r.txId)}
-                  disabled={openingTx === r.txId || exportingTx === r.txId}
+                  onClick={() => requestAction(r, "delete")}
+                  disabled={openingTx === r.txId || exportingTx === r.txId || deletingTx === r.txId}
                   aria-label={copyFor(language, "Delete", "删除")}
                   className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-60"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  {deletingTx === r.txId ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
                 </button>
               </>
             )}
           </div>
+          {pendingAction?.txId === r.txId && (
+            <div className="space-y-2 pt-1">
+              <p className="text-[11px] text-muted-foreground">
+                {pendingAction.kind === "open"
+                  ? copyFor(language, "Enter your password to unlock this file.", "输入密码后解锁查看这个文件。")
+                  : pendingAction.kind === "export"
+                    ? copyFor(language, "Enter your password to export the court package.", "输入密码后导出举证包。")
+                    : copyFor(language, "Enter your password to delete this record.", "输入密码后删除这条记录。")}
+              </p>
+              <div className="relative">
+                <input
+                  value={pwd}
+                  onChange={(e) => setPwd(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleConfirm(r)}
+                  type={showPwd ? "text" : "password"}
+                  placeholder={copyFor(language, "Password", "密码")}
+                  autoFocus
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 pr-10 text-xs text-foreground outline-none placeholder:text-muted-foreground focus:border-primary"
+                />
+                <button
+                  onClick={() => setShowPwd((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                >
+                  {showPwd ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+              {pwdError && (
+                <p className="text-[11px] leading-4 text-destructive">
+                  {pwdError === "vault-unavailable"
+                    ? copyFor(
+                        language,
+                        "Couldn't open your vault right now. Check your connection and try again.",
+                        "暂时打不开你的保险柜。请检查网络后再试。"
+                      )
+                    : copyFor(language, "Incorrect password. Please try again.", "密码错误，请再试一次。")}
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleConfirm(r)}
+                  disabled={!pwd || verifying}
+                  className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold disabled:opacity-60 ${
+                    pendingAction.kind === "delete"
+                      ? "bg-destructive text-destructive-foreground"
+                      : "bg-primary text-primary-foreground"
+                  }`}
+                >
+                  {verifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+                  {pendingAction.kind === "delete"
+                    ? copyFor(language, "Confirm delete", "确定删除")
+                    : copyFor(language, "Confirm", "确认")}
+                </button>
+                <button
+                  onClick={cancelAction}
+                  disabled={verifying}
+                  className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground disabled:opacity-60"
+                >
+                  {copyFor(language, "Cancel", "取消")}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>

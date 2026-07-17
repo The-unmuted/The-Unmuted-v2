@@ -38,6 +38,7 @@ _Last updated: 2026-07-10_
 - [x] Remove P2P chat feature code — done 2026-07-09 (Phase 4b: SOSPage dead wizard/chat branches + CommunityPage/MapPage/useP2PChat/useGeoAlert/p2pChat/supportNetwork deleted; `gun` uninstalled; SOS button path untouched)
 - [x] Evidence deletion cooling-off: 72h soft delete, hidden password-gated recovery (anti-coercion, D-022) — done 2026-07-09 (Phase 4c; browser E2E passed)
 - [x] Login flow error messaging (Phase 4d) — done 2026-07-10, browser-verified: 密码错误 toast → persistent inline errors (LoginFlow unlock/recovery/local + both EvidencePage password gates); `unlockWithPassword`/`unlockWithRecoveryCode` now distinguish vault-unavailable vs wrong-secret; whitespace-trim retry on unlock + trim at password creation (fixes the 2026-07-09 pasted-leading-space incident). FeedbackWidget reviewed — nothing wrong, left unchanged.
+- [x] Per-action password re-verification in Cloud Vault (D-025) — done 2026-07-17 (Katie's request): 解锁查看 / 导出举证包 / 删除 each require a fresh password entry via inline prompt in the record card; delete's two-button confirm replaced by the password entry itself. tsc + 23/23 tests + build pass; **awaiting Katie's phone verification**.
 
 **Gated on company entity (unchanged order):** TSA API access → anchor new + backfill old hashes; Tencent Cloud migration (D-016); phone OTP (D-012)
 

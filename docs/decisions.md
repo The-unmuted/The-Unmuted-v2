@@ -332,3 +332,13 @@ Per-file keys (random per evidence file) ──encrypt──▶ evidence blobs
 - No contact names/numbers are rendered pre-auth.
 
 **Mechanics:** new `UnlockSOSEntry.tsx` mounted in `LoginFlow`; reuses `SOSButton` unmodified (validated code untouched) with `useSilentMode` settings from localStorage.
+
+## D-025 — 云端保险柜逐条操作需重输密码（解锁查看 / 导出举证包 / 删除）(2026-07-17)
+
+**Decision:** Every per-record action in the Cloud Vault that decrypts or destroys evidence — 解锁查看, 导出举证包, and 删除 — requires a fresh password entry (`unlockWithPassword`) at the moment of the action. The list-level password gate stays as-is.
+
+**Why:** Katie's 2026-07-17 feedback: after unlocking the records list, 解锁查看 worked with a single tap, which felt unsafe — the threat is a phone grabbed *while the list is already unlocked* (abuser reads plaintext evidence, exports it, or deletes it). The session master key in memory made decryption invisible; correct cryptographically, but the UX gave no barrier at the sensitive moment. Delete included at Katie's explicit choice (defense-in-depth on top of the D-022 72h recovery).
+
+**Trade-off accepted:** one extra password entry per view/export/delete. For evidence access this friction is the point; capture/upload flows are untouched, so recording in an emergency stays friction-free.
+
+**Mechanics:** inline password prompt inside the record card (`CloudVaultHistory` in `EvidencePage.tsx`), replacing the old two-button delete confirm — typing the password *is* the confirmation. Same inline error copy as the page gate (wrong-secret vs vault-unavailable, D-023 trim tolerance applies). D-022 invariant preserved: delete still looks final; no recovery hint on the delete path.
