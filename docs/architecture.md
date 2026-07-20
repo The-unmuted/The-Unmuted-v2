@@ -129,8 +129,9 @@ src/
 │   ├── SOSButton.tsx       — physical hold button + SMS trigger
 │   ├── LoginFlow.tsx       — email OTP + password / recovery-code unlock
 │   ├── EvidencePage.tsx    — evidence hub (upload, report notes, cloud + legacy history)
-│   ├── PsychPage.tsx       — mental health resources
-│   ├── LegalPage.tsx       — legal aid resources
+│   ├── PsychPage.tsx       — mental health resources (renders AidResourceList)
+│   ├── LegalPage.tsx       — legal aid resources (renders AidResourceList)
+│   ├── AidResourceList.tsx — shared directory renderer: city filter chips + verified-date cards
 │   ├── NGOPage.tsx         — NGO directory + post-SOS suggestion sheet
 │   ├── BottomNav.tsx       — 4-tab navigation
 │   ├── FeedbackWidget.tsx  — feedback submission (Supabase)
@@ -153,6 +154,7 @@ src/
     ├── evidenceCrypto.ts   — AES-256-GCM encrypt/decrypt + hashes
     ├── chainmakerService.ts — ChainMaker REST + simulation fallback (legacy path)
     ├── localStorage.ts     — legacy vault record persistence (read-only)
+    ├── aidDirectory.ts     — typed loader/filters for src/data/aidDirectory.json (D-026)
     ├── locale.tsx          — EN/ZH copyFor utility
     ├── privyAuth.tsx       — Privy OTP email auth (legacy, superseded by Supabase)
     ├── zkpIdentity.ts      — pseudo-ZKP commitment scheme

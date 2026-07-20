@@ -342,3 +342,15 @@ Per-file keys (random per evidence file) ──encrypt──▶ evidence blobs
 **Trade-off accepted:** one extra password entry per view/export/delete. For evidence access this friction is the point; capture/upload flows are untouched, so recording in an emergency stays friction-free.
 
 **Mechanics:** inline password prompt inside the record card (`CloudVaultHistory` in `EvidencePage.tsx`), replacing the old two-button delete confirm — typing the password *is* the confirmation. Same inline error copy as the page gate (wrong-secret vs vault-unavailable, D-023 trim tolerance applies). D-022 invariant preserved: delete still looks final; no recovery hint on the delete path.
+
+## D-026 — 援助资源目录：结构化数据 + 城市检索 + "来源页"自动巡检 (2026-07-19)
+
+**Decision:** Psych/legal aid resources move from hardcoded component arrays to `src/data/aidDirectory.json` with a unified schema (category, kind, situation tags per D-021, city, phone, `sourceUrl`, `verifiedAt`). Pages filter by city (manual picker, national entries always shown). Directory scope: China city-level depth now; other countries country-level national hotlines later (UN hackathon plan). Broadened beyond DV to all women's-rights support (家暴/性侵/骚扰职场/婚姻家事/心理/综合维权 tags).
+
+**Validity guarantee (Katie's hard requirement — no dead numbers):**
+1. **Listing rule:** every entry is human-verified (phone called, info confirmed on an official page) before inclusion; `verifiedAt` shown to users on each card.
+2. **Auto re-check where automation works:** weekly CI cron (`scripts/verify-directory.mjs`) fetches each entry's `sourceUrl` and fails the build if the page is dead (4xx/5xx) or the phone number no longer appears on it. Shortcodes (≤7 digits) are exempt from the number-presence check (too generic). Unreachable-from-CI pages are warnings, not failures (cross-border access limits must not cause false alarms).
+3. **Honest degradation:** entries not re-verified in 12 months show an amber "可能过期，请优先拨 12338/12348" label in the UI; entries without a `sourceUrl` are warned weekly until the team adds the exact official page that publishes the number. Homepages don't count (first run caught this: Shanghai center's number isn't on the sh.12348 homepage).
+4. **What is NOT done:** no robo-dialing of hotlines to test them (unethical — would occupy crisis lines), no GPS-based city detection (manual picker only; browsing aid resources must not request location).
+
+**Why:** a survivor in crisis who dials a dead number may not try a second one. Verification-before-listing plus automated source monitoring is the strongest guarantee available without calling hotlines by machine.

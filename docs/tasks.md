@@ -40,7 +40,7 @@ _Last updated: 2026-07-10_
 - [x] Login flow error messaging (Phase 4d) — done 2026-07-10, browser-verified: 密码错误 toast → persistent inline errors (LoginFlow unlock/recovery/local + both EvidencePage password gates); `unlockWithPassword`/`unlockWithRecoveryCode` now distinguish vault-unavailable vs wrong-secret; whitespace-trim retry on unlock + trim at password creation (fixes the 2026-07-09 pasted-leading-space incident). FeedbackWidget reviewed — nothing wrong, left unchanged.
 - [x] Per-action password re-verification in Cloud Vault (D-025) — done 2026-07-17 (Katie's request): 解锁查看 / 导出举证包 / 删除 each require a fresh password entry via inline prompt in the record card; delete's two-button confirm replaced by the password entry itself. tsc + 23/23 tests + build pass; **awaiting Katie's phone verification**.
 
-**Gated on company entity (unchanged order):** TSA API access → anchor new + backfill old hashes; Tencent Cloud migration (D-016); phone OTP (D-012)
+**Gated on company entity (unchanged order):** TSA API access → anchor new + backfill old hashes; Tencent Cloud migration (D-016); phone OTP (D-012); robot voice call to emergency contacts on SOS (语音通知外呼, decided 2026-07-18 — needs entity + template审核; contact numbers would transit the server at trigger time only, privacy decision to be formalized before build)
 
 ---
 
@@ -50,6 +50,13 @@ _Last updated: 2026-07-10_
 - [ ] **ChainMaker API proxy** — Move ChainMaker REST call to Vercel Serverless Function to fix CORS and protect API key (currently `VITE_` prefix exposes it to browser)
 - [x] ~~Replace Gun.js with real E2E encryption~~ — moot 2026-07-09: chat feature removed entirely (Phase 4b); no chat will be rebuilt (product scope)
 - [x] ~~Password reset flow~~ — solved 2026-07-06: email OTP resets account access, paper recovery code resets data access (D-017/D-018)
+
+### Aid directory expansion (D-026, decided 2026-07-18; skeleton shipped 2026-07-19)
+- [x] Directory skeleton: `aidDirectory.json` schema + city filter UI + 10 entries migrated + integrity tests + weekly source-monitoring CI — done 2026-07-19
+- [ ] **Fill missing sourceUrls** (8 of 10 entries) — team finds the exact official page publishing each number; CI warns weekly until done
+- [ ] **China data expansion**: seed list first batch drafted 2026-07-19 (成都/杭州/武汉/南京/西安, `docs/援助目录种子清单-待核实.md`) — team phone-verifies each before entering aidDirectory.json; later batches follow `{省}.12348.gov.cn` pattern (重庆、天津、长沙、郑州、济南…)
+- [ ] **Global country-level hotlines** (~50–100 countries, before the UN hackathon): national DV/sexual-violence hotline + legal aid entry + local emergency number per country
+- [ ] Tag-based filtering UI ("我遇到了什么事") — activate once entries per city grow beyond a screenful
 
 ### Core UX
 - [ ] **Biometric unlock (Face ID / fingerprint)** — replace daily password entry with platform biometrics (WebAuthn/passkey + PRF wrapping the master key); password remains the fallback + new-device path. Requested by Katie 2026-07-10 after friction feedback.

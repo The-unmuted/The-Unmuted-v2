@@ -2,7 +2,7 @@
 
 _This file captures the current project state for AI assistants. Update before ending each work session._
 
-_Last updated: 2026-07-17_
+_Last updated: 2026-07-19_
 
 ---
 
@@ -18,7 +18,7 @@ Live: https://the-unmuted.vercel.app/
 
 ## Current State
 
-**Active branch:** `main` (Phase 1-4 all committed & deployed; 2026-07-10 UX batch deployed and verified live on both platforms: real-2s SOS hold, in-app 修改密码, DonationWidget + display-name removed; 2026-07-11: ‼️ SOS entry on the unlock screen, D-024; 2026-07-17: per-action password re-verification in the Cloud Vault, D-025 — 解锁查看/导出举证包/删除 each ask for the password again, **awaiting Katie's phone verification**)
+**Active branch:** `main` (Phase 1-4 all committed & deployed; 2026-07-10 UX batch deployed and verified live on both platforms: real-2s SOS hold, in-app 修改密码, DonationWidget + display-name removed; 2026-07-11: ‼️ SOS entry on the unlock screen, D-024; 2026-07-17: per-action password re-verification in the Cloud Vault, D-025 — 解锁查看/导出举证包/删除 each ask for the password again, **awaiting Katie's phone verification**; 2026-07-19: aid directory skeleton, D-026 — city-filterable psych/legal directory in `aidDirectory.json`, weekly source-monitoring CI, **awaiting Katie's phone verification**. Next: fill 8 missing sourceUrls, China seed data, global country hotlines before UN hackathon — see tasks.md)
 **Status:** **Phase 4 is complete** (4a/4b: honest copy + chat removal; 4c: D-022 delete cooling-off; 4d 2026-07-10: persistent inline unlock errors at all five password gates, vault-unavailable vs wrong-secret distinction in `UnlockResult`, whitespace-trim retry on unlock + trim at password creation — fixes the 2026-07-09 pasted-space lockout; FeedbackWidget reviewed and deliberately unchanged). Phases 1–3 browser-verified on a clean production build: OTP login (6-digit) → cloud key-vault password unlock → capture → encrypt → private-bucket save (现场取证 badge) → password re-verify → decrypt/export with exact SHA-256 match; 导出举证包 (D-020) verified end to end. Test suite: 23/23 vitest, tsc + eslint clean.
 
 **Deployments (both live, verified 2026-07-10 serving the UX-batch build):**

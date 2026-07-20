@@ -1,5 +1,16 @@
 # Changelog — The Unmuted (非默)
 
+## 2026-07-19 — Aid resource directory: city search + automated source monitoring (D-026)
+
+### Added
+- **Structured aid directory** (`src/data/aidDirectory.json` + `src/lib/aidDirectory.ts`): 10 existing psych/legal entries migrated to a unified schema — situation tags (家暴/性侵/骚扰职场/婚姻家事/心理/综合维权, per D-021 scope), city, `sourceUrl` (official page publishing the number), `verifiedAt` (shown to users on every card; amber stale warning after 12 months).
+- **City filter** on 心理援助 and 法律援助 (`AidResourceList.tsx`): manual chips (no GPS), only cities with entries are offered, national hotlines always shown.
+- **Weekly source monitoring** (`scripts/verify-directory.mjs` + `verify-directory.yml` cron, Mondays 09:00 Beijing): dead source page or phone number missing from it = CI failure alert; missing `sourceUrl` or >6-month-old human verification = warning. Also runs on PRs touching the directory. First run already caught that the Shanghai center's number isn't on the sh.12348 homepage → its sourceUrl reset to null pending the exact page.
+- **Directory integrity tests** (12 new vitest cases): unique ids, bilingual fields, valid tags, https-only urls, tel:-safe phones, verifiedAt format, filter semantics.
+
+### Verified
+- tsc clean, 35/35 tests, production build, verification script runs clean locally (0 failures / 8 missing-source warnings for the team). UI not yet browser-tested — Katie to check city chips on her phone.
+
 ## 2026-07-17 — Per-action password re-verification in the Cloud Vault (D-025)
 
 ### Changed (Katie's request after using 解锁查看 on her phone)
